@@ -1,3 +1,5 @@
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { GoogleOAuthClient } from '../src/adapters/google-oauth/google-oauth-client';
 import { createApp } from '../src/app';
 import type { Config } from '../src/config';
@@ -62,4 +64,15 @@ export async function createAgentKey(app: TestApp, googleSub = 'alice') {
   });
   const { key, apiKey } = (await res.json()) as { key: string; apiKey: { id: string } };
   return { key, apiKeyId: apiKey.id, sessionCookie };
+}
+
+/** A real MCP client talking to the in-process app over Streamable HTTP. */
+export async function connectMcp(app: TestApp, key: string) {
+  const client = new Client({ name: 'test-agent', version: '0.0.0' });
+  const transport = new StreamableHTTPClientTransport(new URL('http://gateway.test/mcp'), {
+    fetch: async (url, init) => app.request(url.toString(), init),
+    requestInit: { headers: { authorization: `Bearer ${key}` } },
+  });
+  await client.connect(transport);
+  return client;
 }

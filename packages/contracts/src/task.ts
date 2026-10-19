@@ -17,5 +17,8 @@ export const TaskSchema = z.object({
   /** Held by reservations not yet spent. */
   reserved: AmountSchema,
   createdAt: TimestampSchema,
+  /** An active task stops being usable at this time. */
+  expiresAt: TimestampSchema,
+  closedAt: TimestampSchema.optional(),
 });
 export type Task = z.infer<typeof TaskSchema>;

@@ -64,9 +64,6 @@ describe('API keys (dashboard) and agent auth', () => {
 
 describe('not yet implemented services', () => {
   it.each([
-    ['GET', '/api/intents'],
-    ['POST', '/api/intents/int_00000000-0000-0000-0000-000000000000/approve'],
-    ['GET', '/api/tasks'],
     ['GET', '/api/operations'],
     ['GET', '/api/reviews'],
   ])('%s %s answers 501 not_implemented', async (method, path) => {

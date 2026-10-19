@@ -1,38 +1,54 @@
 import { z } from 'zod';
-import { IntentIdSchema, TaskIdSchema, TimestampSchema, UserIdSchema } from './ids';
+import { ApiKeyIdSchema, IntentIdSchema, TaskIdSchema, TimestampSchema, UserIdSchema } from './ids';
 import { AmountSchema, UsdcDecimalSchema } from './money';
 
 export const IntentStatusSchema = z.enum(['pending_approval', 'approved', 'rejected', 'expired']);
 export type IntentStatus = z.infer<typeof IntentStatusSchema>;
 
-/** What the agent submits via `submit_intent`. Amounts are human USDC strings. */
-export const IntentProposalSchema = z.object({
-  /** Why the agent needs to buy anything, e.g. "Buy market data for a research note". */
-  purpose: z.string().min(1).max(500),
-  /** The user's task in their own words; Judge compares purchases against it. */
-  task: z.string().min(1).max(2000),
-  /** What kinds of purchases are in scope. */
-  allowedPurchases: z.array(z.string().min(1)).min(1),
-  /** What must never be bought. */
-  forbidden: z.array(z.string().min(1)).default([]),
-  budgetUsdc: UsdcDecimalSchema,
-  maxPerPurchaseUsdc: UsdcDecimalSchema,
-  /** How many purchases the agent expects to make. */
-  plannedPurchases: z.number().int().positive().optional(),
+/**
+ * What the agent submits via `submit_intent`. Every field is required and there are no defaults:
+ * each intent is written for one specific job. The descriptions are what the agent sees.
+ */
+export const IntentProposalSchema = z.strictObject({
+  purpose: z.string().min(1).max(500).describe('Why you need to buy anything, in one sentence.'),
+  task: z
+    .string()
+    .min(1)
+    .max(2000)
+    .describe("The user's request in their own words. Purchases are judged against it."),
+  allowedPurchases: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe('Kinds of products or services you may buy for this task, one per item.'),
+  forbidden: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe('Kinds of purchases that must never happen for this task, one per item.'),
+  budgetUsdc: UsdcDecimalSchema.describe('Total budget for the whole task in USDC, e.g. "1.50".'),
+  maxPerPurchaseUsdc: UsdcDecimalSchema.describe(
+    'Maximum price of a single purchase in USDC. Must not exceed budgetUsdc.',
+  ),
+  plannedPurchases: z
+    .number()
+    .int()
+    .positive()
+    .describe('How many purchases you expect to make for this task.'),
 });
 export type IntentProposal = z.infer<typeof IntentProposalSchema>;
 
-/** Returned by `get_intent_template`: how to fill in an IntentProposal. */
+/** Returned by `get_intent_template`: instructions plus the JSON Schema of IntentProposal. */
 export const IntentTemplateSchema = z.object({
   instructions: z.string(),
-  example: IntentProposalSchema,
+  schema: z.record(z.string(), z.unknown()),
 });
 export type IntentTemplate = z.infer<typeof IntentTemplateSchema>;
 
-/** Stored intent. Immutable once approved. */
+/** Stored intent. Immutable once submitted; only its status changes. */
 export const IntentSchema = z.object({
   id: IntentIdSchema,
   userId: UserIdSchema,
+  /** The key that submitted it; the task is bound to this key. */
+  apiKeyId: ApiKeyIdSchema,
   status: IntentStatusSchema,
   purpose: z.string(),
   task: z.string(),
@@ -40,7 +56,7 @@ export const IntentSchema = z.object({
   forbidden: z.array(z.string()),
   budget: AmountSchema,
   maxPerPurchase: AmountSchema,
-  plannedPurchases: z.number().int().positive().optional(),
+  plannedPurchases: z.number().int().positive(),
   /** Set once approved. */
   taskId: TaskIdSchema.optional(),
   createdAt: TimestampSchema,

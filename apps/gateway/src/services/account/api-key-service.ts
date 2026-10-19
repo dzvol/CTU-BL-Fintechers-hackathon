@@ -42,9 +42,12 @@ const toApiKey = (record: ApiKeyRecord): ApiKey => ({
 export function createApiKeyService(deps: {
   apiKeys: ApiKeyRepository;
   transaction: Transaction;
+  /** Runs in the revoking transaction, e.g. to end the key's task and pending intent. */
+  onRevoked?: (apiKeyId: ApiKeyId, at: string) => void;
   now?: () => Date;
 }): ApiKeyService {
   const now = deps.now ?? (() => new Date());
+  const onRevoked = deps.onRevoked ?? (() => {});
 
   const ownedKey = (userId: UserId, apiKeyId: ApiKeyId) => {
     const record = deps.apiKeys.findById(apiKeyId);
@@ -68,7 +71,9 @@ export function createApiKeyService(deps: {
         revokedAt: null,
       };
       deps.transaction(() => {
+        const previous = deps.apiKeys.listByUser(userId).filter((k) => !k.revokedAt);
         deps.apiKeys.revokeActiveByUser(userId, createdAt);
+        for (const old of previous) onRevoked(old.id, createdAt);
         deps.apiKeys.insert(record);
       });
       return { apiKey: toApiKey(record), key };
@@ -77,9 +82,15 @@ export function createApiKeyService(deps: {
     list: (userId) => deps.apiKeys.listByUser(userId).map(toApiKey),
 
     revoke(userId, apiKeyId) {
-      ownedKey(userId, apiKeyId);
-      deps.apiKeys.revoke(apiKeyId, now().toISOString());
-      return toApiKey(deps.apiKeys.findById(apiKeyId)!);
+      return deps.transaction(() => {
+        const record = ownedKey(userId, apiKeyId);
+        if (!record.revokedAt) {
+          const at = now().toISOString();
+          deps.apiKeys.revoke(apiKeyId, at);
+          onRevoked(apiKeyId, at);
+        }
+        return toApiKey(deps.apiKeys.findById(apiKeyId)!);
+      });
     },
 
     authenticate(key) {

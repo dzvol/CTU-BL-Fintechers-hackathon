@@ -13,16 +13,12 @@ import { createRateLimiter } from './auth/rate-limit';
 import { createSessionService } from './auth/session-service';
 import type { Config } from './config';
 import { createMcpRoutes } from './mcp/mcp-routes';
-import { createAccountService } from './services/account/account-service';
-import { createApiKeyService } from './services/account/api-key-service';
-import { createIntentService } from './services/intent/intent-service';
-import { createPaymentGateway } from './services/payment-gateway/payment-gateway';
-import { createReviewService } from './services/review/review-service';
-import { createTaskService } from './services/task/task-service';
+import { createServices } from './services';
 
-/** Swappable output adapters, used by tests. */
+/** Swappable dependencies, used by tests. */
 export interface AppOverrides {
   googleOAuth?: GoogleOAuthClient;
+  now?: () => Date;
 }
 
 /** Per API key, shared by /mcp and /v1. Leaves room for polling get_intent_status. */
@@ -32,19 +28,15 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
   const store = createStore(openDatabase(config.databasePath));
   const google = overrides.googleOAuth ?? (config.google && createGoogleOAuthClient(config.google));
 
-  const sessions = createSessionService({ sessions: store.sessions });
-  const accounts = createAccountService({
-    users: store.users,
-    allocations: store.allocations,
-    transaction: store.transaction,
-    defaultAllocation: config.userAllocation,
+  const sessions = createSessionService({ sessions: store.sessions, now: overrides.now });
+  const services = createServices({
+    store,
+    userAllocation: config.userAllocation,
+    webBaseUrl: config.webBaseUrl,
+    now: overrides.now,
   });
-  const apiKeys = createApiKeyService({ apiKeys: store.apiKeys, transaction: store.transaction });
+  const { accounts, apiKeys } = services;
   const rateLimiter = createRateLimiter(AGENT_RATE_LIMIT);
-  const intents = createIntentService();
-  const tasks = createTaskService();
-  const payments = createPaymentGateway();
-  const reviews = createReviewService();
 
   const app = new Hono();
   app.onError(handleError);
@@ -61,12 +53,9 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
       secureCookies: config.secureCookies,
     }),
   );
-  app.route(
-    '/api',
-    createDashboardRoutes({ sessions, accounts, apiKeys, intents, tasks, payments, reviews }),
-  );
+  app.route('/api', createDashboardRoutes({ sessions, ...services }));
   app.route('/v1', createIntegrationRoutes({ accounts, apiKeys, rateLimiter }));
-  app.route('/mcp', createMcpRoutes({ apiKeys, rateLimiter, intents, tasks, payments, reviews }));
+  app.route('/mcp', createMcpRoutes({ ...services, rateLimiter }));
 
   return app;
 }
