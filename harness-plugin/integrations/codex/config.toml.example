@@ -1,0 +1,12 @@
+# Manual version of what `semanticauth install codex` writes to ~/.codex/config.toml.
+#
+# Codex doesn't accept a bearer token inline for Streamable HTTP servers, only the name of an
+# environment variable. Start Codex with `semanticauth run codex`, or export the variable
+# yourself in your shell profile (never in a committed file).
+#
+# The SKILL goes to ~/.agents/skills/semanticauth/ (a copy of
+# harness-plugin/integrations/claude-code/skills/semanticauth).
+
+[mcp_servers.semanticauth]
+url = "https://<gateway-host>/mcp"
+bearer_token_env_var = "SEMANTICAUTH_API_KEY"

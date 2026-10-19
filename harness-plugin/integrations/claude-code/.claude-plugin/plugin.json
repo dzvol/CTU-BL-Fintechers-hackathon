@@ -1,0 +1,26 @@
+{
+  "name": "semanticauth",
+  "displayName": "SemanticAuth",
+  "version": "0.0.0",
+  "description": "Paid content for agents via x402. Every purchase goes through the SemanticAuth gateway: a user-approved intent, deterministic policy and semantic checks.",
+  "author": {
+    "name": "CTU BL Fintechers"
+  },
+  "repository": "https://github.com/dzvol/CTU-BL-Fintechers-hackathon",
+  "keywords": ["x402", "payments", "mcp", "security", "agentic-payments"],
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "SemanticAuth API key",
+      "description": "Create it in the SemanticAuth dashboard (API keys). Starts with sa_.",
+      "required": true,
+      "sensitive": true
+    },
+    "gateway_url": {
+      "type": "string",
+      "title": "Gateway URL",
+      "description": "Base URL of the SemanticAuth gateway, without /mcp.",
+      "default": "http://localhost:8787"
+    }
+  }
+}

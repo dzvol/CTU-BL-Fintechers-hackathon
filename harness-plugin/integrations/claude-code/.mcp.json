@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "gateway": {
+      "type": "http",
+      "url": "${user_config.gateway_url}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${user_config.api_key}"
+      },
+      "timeout": 120000
+    }
+  }
+}
