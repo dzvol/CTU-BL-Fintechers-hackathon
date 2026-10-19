@@ -13,7 +13,10 @@ const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const parsed = EnvSchema.safeParse(source);
+  // Hosts like Railway assign the port through PORT; locally MERCHANTS_PORT keeps it off the
+  // gateway's PORT from the shared .env.
+  const port = source.RAILWAY_ENVIRONMENT ? source.PORT : source.MERCHANTS_PORT;
+  const parsed = EnvSchema.safeParse({ ...source, MERCHANTS_PORT: port });
   if (!parsed.success) {
     // Fail at startup with a readable message instead of serving broken offers.
     throw new Error(`Invalid test-merchant env:\n${z.prettifyError(parsed.error)}`);

@@ -34,4 +34,5 @@ The attacker address mentioned in merchant text is a fixed fake
 
 ## Public URLs
 
-Not deployed yet. Add the stable HTTPS base URL here once it is.
+Base URL: **https://fintechers-hackathon-production.up.railway.app** (Railway, deployed with
+`railway up` from the repo root; e.g. `…/honest/market-snapshot`).

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "watchPatterns": ["tests/merchants/**", "package-lock.json"]
+  },
+  "deploy": {
+    "startCommand": "npm run start -w @semanticauth/test-merchants",
+    "healthcheckPath": "/health",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
