@@ -126,6 +126,19 @@ describe('mapToolCatalog', () => {
 });
 
 describe('mapPaymentRequired', () => {
+  it('includes the separate HTTP 402 body attached by the transport', () => {
+    const additionalContent = { message: description };
+    const [mapped] = queries(mapPaymentRequired({ ...payment, additionalContent }));
+    expect(mapped?.fields_to_inspect.additionalContent).toEqual(
+      inspected(additionalContent, 'unexpected_data_with_harmful_text'),
+    );
+  });
+
+  it('preserves an explicitly empty additional HTTP body', () => {
+    const [mapped] = queries(mapPaymentRequired({ ...payment, additionalContent: '' }));
+    expect(mapped?.fields_to_inspect.additionalContent?.value).toBe('');
+  });
+
   it('maps only the annotated x402 fields and uses the exact risk labels', () => {
     const before = structuredClone(payment);
     const [mapped] = queries(mapPaymentRequired(payment));

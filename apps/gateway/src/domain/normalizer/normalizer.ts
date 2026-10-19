@@ -36,6 +36,8 @@ const paymentSchema = z.object({
   x402Version: z.literal(2),
   resource: resourceSchema,
   accepts: z.array(requirementSchema).min(1),
+  // The HTTP adapter attaches the separate 402 body to preserve it for Screen.
+  additionalContent: z.json().optional(),
 });
 const mcpPaymentSchema = rpc(
   z.object({
@@ -165,7 +167,11 @@ export function mapPaymentRequired(query: unknown): NormalizationResult<PaymentR
   return normalize(schema, query, (input) => {
     if ('result' in input) {
       const { structuredContent, content } = input.result;
-      return paymentQueries(structuredContent.resource, structuredContent.accepts, content);
+      return paymentQueries(
+        structuredContent.resource,
+        structuredContent.accepts,
+        content ?? structuredContent.additionalContent,
+      );
     }
     if ('items' in input) {
       return input.items.flatMap((item) => paymentQueries({ url: item.resource }, item.accepts));
@@ -186,7 +192,7 @@ export function mapPaymentRequired(query: unknown): NormalizationResult<PaymentR
         },
       ];
     }
-    return paymentQueries(input.resource, input.accepts);
+    return paymentQueries(input.resource, input.accepts, input.additionalContent);
   });
 }
 

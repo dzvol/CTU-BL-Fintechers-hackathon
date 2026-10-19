@@ -43,6 +43,12 @@ preserved in full. Preserving a block does not imply Jev supports that media typ
 x402 does not define an envelope for paid content, so the x402 data mapper, like the
 MPP one, retains the entire decoded body.
 
+The HTTP x402 adapter exposes `normalizerInput` for direct use with these functions.
+For payment required, it attaches the separate HTTP response body as optional
+`additionalContent` alongside the decoded payment requirements. For delivery, it
+wraps the entire merchant response body as `{ data: body }`, preserving application
+responses that do not themselves use the template's `data` envelope.
+
 These functions prepare **Screen inputs**, retaining merchant text verbatim. They
 do not select or approve a payment option, enforce the supported payment profile,
 or produce the separate `NormalizedOffer` used by Policy and payment execution.
