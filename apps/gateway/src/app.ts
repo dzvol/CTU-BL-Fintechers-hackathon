@@ -17,6 +17,7 @@ import { createAuthRoutes } from './api/dashboard/auth-routes';
 import { createDashboardRoutes } from './api/dashboard/dashboard-routes';
 import { handleError } from './api/errors';
 import { createIntegrationRoutes } from './api/integration/integration-routes';
+import { mountDashboard } from './api/web-routes';
 import { createRateLimiter } from './auth/rate-limit';
 import { createSessionService } from './auth/session-service';
 import type { Config } from './config';
@@ -86,6 +87,7 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
   app.route('/api', createDashboardRoutes({ sessions, ...services }));
   app.route('/v1', createIntegrationRoutes({ accounts, apiKeys, rateLimiter }));
   app.route('/mcp', createMcpRoutes({ ...services, rateLimiter }));
+  if (config.webDistDir) mountDashboard(app, config.webDistDir);
 
   return app;
 }

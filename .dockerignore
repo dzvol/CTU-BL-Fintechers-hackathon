@@ -1,0 +1,14 @@
+# Build context for infra/railway/*.Dockerfile. Secrets and local state never enter an image.
+.git
+**/node_modules
+**/dist
+**/coverage
+.env
+.env.*
+!.env.example
+**/data
+*.db
+*.db-*
+apps/gateway/eval/data
+apps/gateway/eval/snapshots
+apps/gateway/eval/results

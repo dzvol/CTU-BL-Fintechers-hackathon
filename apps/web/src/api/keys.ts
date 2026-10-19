@@ -1,7 +1,17 @@
-import { type CreatedApiKey, CreatedApiKeySchema } from '@semanticauth/contracts';
+import {
+  ApiKeySchema,
+  CreatedApiKeySchema,
+  CreateApiKeyInputSchema,
+  listResponseSchema,
+  type ApiKeyId,
+} from '@semanticauth/contracts';
 import { request } from './http';
-
-/** Creates an agent API key (revoking the previous one). The `key` is shown only this once. */
-export function createApiKey(name: string): Promise<CreatedApiKey> {
-  return request('/api/keys', CreatedApiKeySchema, { method: 'POST', body: { name } });
-}
+export const fetchKeys = (signal?: AbortSignal) =>
+  request('/api/keys', listResponseSchema(ApiKeySchema), { signal }).then((r) => r.items);
+export const createApiKey = (name: string) =>
+  request('/api/keys', CreatedApiKeySchema, {
+    method: 'POST',
+    body: CreateApiKeyInputSchema.parse({ name }),
+  });
+export const revokeApiKey = (id: ApiKeyId) =>
+  request(`/api/keys/${encodeURIComponent(id)}`, ApiKeySchema, { method: 'DELETE' });

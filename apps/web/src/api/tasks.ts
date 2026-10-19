@@ -1,12 +1,6 @@
-import { listResponseSchema, type Task, TaskSchema } from '@semanticauth/contracts';
+import { listResponseSchema, TaskSchema, type TaskId } from '@semanticauth/contracts';
 import { request } from './http';
-
-/** The active task, if any (there is at most one). */
-export async function fetchActiveTask(): Promise<Task | undefined> {
-  const { items } = await request('/api/tasks', listResponseSchema(TaskSchema));
-  return items.find((task) => task.status === 'active');
-}
-
-export function closeTask(id: string): Promise<Task> {
-  return request(`/api/tasks/${id}/close`, TaskSchema, { method: 'POST' });
-}
+export const fetchTasks = (signal?: AbortSignal) =>
+  request('/api/tasks', listResponseSchema(TaskSchema), { signal }).then((r) => r.items);
+export const closeTask = (id: TaskId) =>
+  request(`/api/tasks/${encodeURIComponent(id)}/close`, TaskSchema, { method: 'POST' });

@@ -1,96 +1,167 @@
-import { formatUsdc, type Intent, type Me, type Review, type Task } from '@semanticauth/contracts';
-import { useCallback, useEffect, useState } from 'react';
-import { fetchMe, LOGIN_URL, logout } from './api/auth';
-import { approveIntent, fetchPendingIntent, rejectIntent } from './api/intents';
-import { createApiKey } from './api/keys';
-import { approveReview, fetchPendingReviews, rejectReview } from './api/reviews';
-import { closeTask, fetchActiveTask } from './api/tasks';
+import { lazy, Suspense } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Link,
+  Outlet,
+  redirect,
+  RouterProvider,
+} from '@tanstack/react-router';
+import { Loading } from './components/sa/common';
+import { OwnerLayout } from './components/sa/owner-layout';
+import { SessionBoundary } from './components/sa/session-boundary';
+import { Toaster } from './components/ui/sonner';
+import { FILTERS, type ActivityFilter } from './lib/filters';
+import './styles.css';
 
-export function App() {
-  // undefined = still loading, null = logged out
-  const [me, setMe] = useState<Me | null>();
-  const [newKey, setNewKey] = useState<string>();
-  const [intent, setIntent] = useState<Intent>();
-  const [task, setTask] = useState<Task>();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [error, setError] = useState<string>();
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const SignIn = page(() => import('./pages/sign-in'), 'SignIn');
+const Overview = page(() => import('./pages/overview'), 'Overview');
+const Activity = page(() => import('./pages/activity'), 'Activity');
+const PurchaseDetail = page(() => import('./pages/purchase-detail'), 'PurchaseDetail');
+const Tasks = page(() => import('./pages/tasks'), 'Tasks');
+const TaskDetail = page(() => import('./pages/task-detail'), 'TaskDetail');
+const Agent = page(() => import('./pages/agent'), 'Agent');
+const Faq = page(() => import('./pages/information'), 'Faq');
+const Contact = page(() => import('./pages/information'), 'Contact');
 
-  const refresh = useCallback(() => {
-    Promise.all([fetchMe(), fetchPendingIntent(), fetchActiveTask(), fetchPendingReviews()]).then(
-      ([profile, pendingIntent, activeTask, pendingReviews]) => {
-        setMe(profile);
-        setIntent(pendingIntent);
-        setTask(activeTask);
-        setReviews(pendingReviews);
-      },
-      (err: Error) => setError(err.message),
-    );
-  }, []);
-
-  useEffect(() => {
-    fetchMe().then(setMe, () => setMe(null));
-  }, []);
-
-  // Once per login; `refresh` itself replaces `me` with the current balance.
-  const signedIn = Boolean(me);
-  useEffect(() => {
-    if (signedIn) refresh();
-  }, [signedIn, refresh]);
-
-  if (me === undefined) return null;
-  if (me === null) return <a href={LOGIN_URL}>Sign in with Google</a>;
-
-  /** Runs an action, shows its error if any, then reloads balance, intent, task and reviews. */
-  const act = (action: () => Promise<unknown>) => () => {
-    setError(undefined);
-    action().then(refresh, (err: Error) => setError(err.message));
-  };
-
+function Message({ title, action }: { title: string; action: React.ReactNode }) {
   return (
-    <div>
-      <p>{me.email}</p>
-      {me.balance && (
-        <p>
-          Remaining: {formatUsdc(me.balance.remaining)} of {formatUsdc(me.allocation)} USDC
-          {me.balance.remaining === '0' && ' (used up: API keys no longer work)'}
-        </p>
-      )}
-      <button
-        onClick={act(() =>
-          createApiKey(`key ${new Date().toISOString()}`).then(({ key }) => setNewKey(key)),
-        )}
-      >
-        Create API key
-      </button>
-      {newKey && <pre>{newKey}</pre>}
+    <main className="grid min-h-screen place-items-center p-8 text-center">
+      <div>
+        <h1 className="text-xl font-semibold">{title}</h1>
+        <p className="mt-3 text-sm">{action}</p>
+      </div>
+    </main>
+  );
+}
 
-      <button onClick={act(async () => {})}>Refresh</button>
+const root = createRootRoute({
+  component: () => (
+    <SessionBoundary>
+      <Suspense fallback={<Loading />}>
+        <Outlet />
+      </Suspense>
+    </SessionBoundary>
+  ),
+  notFoundComponent: () => (
+    <Message
+      title="Page not found"
+      action={
+        <Link to="/overview" className="text-primary hover:underline">
+          Go to overview
+        </Link>
+      }
+    />
+  ),
+  errorComponent: () => (
+    <Message
+      title="This page didn't load"
+      action={
+        <a href="/overview" className="text-primary hover:underline">
+          Reload the dashboard
+        </a>
+      }
+    />
+  ),
+});
+const signIn = createRoute({
+  getParentRoute: () => root,
+  path: '/',
+  component: SignIn,
+  validateSearch: (s: Record<string, unknown>): { expired?: boolean } =>
+    s.expired === true ? { expired: true } : {},
+});
+const owner = createRoute({ getParentRoute: () => root, id: 'owner', component: OwnerLayout });
+const overview = createRoute({
+  getParentRoute: () => owner,
+  path: '/overview',
+  component: Overview,
+});
+const purchase = createRoute({
+  getParentRoute: () => owner,
+  path: '/activity/$id',
+  component: PurchaseDetail,
+});
+const tasks = createRoute({ getParentRoute: () => owner, path: '/tasks', component: Tasks });
+const task = createRoute({
+  getParentRoute: () => owner,
+  path: '/tasks/$id',
+  component: TaskDetail,
+});
+const faq = createRoute({
+  getParentRoute: () => owner,
+  path: '/faq',
+  component: Faq,
+  staticData: { public: true },
+});
+const contact = createRoute({
+  getParentRoute: () => owner,
+  path: '/contact',
+  component: Contact,
+  staticData: { public: true },
+});
+const agent = createRoute({ getParentRoute: () => owner, path: '/agent', component: Agent });
+const activity = createRoute({
+  getParentRoute: () => owner,
+  path: '/activity',
+  component: Activity,
+  validateSearch: (s: Record<string, unknown>): { filter?: ActivityFilter } => ({
+    filter: FILTERS.find((f) => f.id === s.filter)?.id ?? 'all',
+  }),
+});
+// Links from before the redesign (agent skill, bookmarks) keep working.
+const moved = [
+  createRoute({
+    getParentRoute: () => root,
+    path: '/mandates',
+    beforeLoad: () => {
+      throw redirect({ to: '/tasks' });
+    },
+  }),
+  createRoute({
+    getParentRoute: () => root,
+    path: '/mandates/$id',
+    beforeLoad: ({ params }) => {
+      throw redirect({ to: '/tasks/$id', params });
+    },
+  }),
+  createRoute({
+    getParentRoute: () => root,
+    path: '/connect',
+    beforeLoad: () => {
+      throw redirect({ to: '/agent' });
+    },
+  }),
+];
 
-      {intent && (
-        <div>
-          <pre>{JSON.stringify(intent, null, 2)}</pre>
-          <button onClick={act(() => approveIntent(intent.id))}>Approve intent</button>
-          <button onClick={act(() => rejectIntent(intent.id))}>Reject intent</button>
-        </div>
-      )}
-
-      {task && (
-        <div>
-          <pre>{JSON.stringify(task, null, 2)}</pre>
-          <button onClick={act(() => closeTask(task.id))}>Close task</button>
-        </div>
-      )}
-
-      {reviews.map((review) => (
-        <div key={review.id}>
-          <pre>{JSON.stringify(review, null, 2)}</pre>
-          <button onClick={act(() => approveReview(review.id))}>Approve purchase</button>
-          <button onClick={act(() => rejectReview(review.id))}>Reject purchase</button>
-        </div>
-      ))}
-
-      {error && <p>{error}</p>}
-      <button onClick={() => logout().then(() => setMe(null))}>Logout</button>
-    </div>
+export const router = createRouter({
+  routeTree: root.addChildren([
+    signIn,
+    ...moved,
+    owner.addChildren([overview, activity, purchase, tasks, task, agent, faq, contact]),
+  ]),
+  scrollRestoration: true,
+});
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    public?: boolean;
+  }
+  interface Register {
+    router: typeof router;
+  }
+}
+export const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 1000 }, mutations: { retry: false } },
+});
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster position="bottom-right" />
+    </QueryClientProvider>
   );
 }
