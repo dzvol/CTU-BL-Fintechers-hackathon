@@ -12,3 +12,10 @@ export const MeSchema = z.object({
   allocation: AmountSchema,
 });
 export type Me = z.infer<typeof MeSchema>;
+
+/** Every dashboard list endpoint answers `{ items: [...] }`. */
+export const listResponseSchema = <T extends z.ZodType>(item: T) =>
+  z.object({ items: z.array(item) });
+export interface ListResponse<T> {
+  items: T[];
+}

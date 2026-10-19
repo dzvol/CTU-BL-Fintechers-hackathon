@@ -4,6 +4,7 @@ import { AmountSchema } from './money';
 import { IntentStatusSchema } from './intent';
 import { OperationStateSchema, SettlementSchema } from './operation';
 import { ReviewStatusSchema } from './review';
+import { TaskSchema } from './task';
 import { VerdictReasonSchema, VerdictSchema } from './verdict';
 
 export { IntentProposalSchema as SubmitIntentInputSchema } from './intent';
@@ -37,6 +38,10 @@ export const GetIntentStatusResultSchema = z.object({
   budget: AmountSchema.optional(),
 });
 export type GetIntentStatusResult = z.infer<typeof GetIntentStatusResultSchema>;
+
+/** `get_task`: the active task of the calling API key, or null. */
+export const GetTaskResultSchema = z.object({ task: TaskSchema.nullable() });
+export type GetTaskResult = z.infer<typeof GetTaskResultSchema>;
 
 /** No task id: the gateway resolves the active task from the API key. */
 export const PaidFetchInputSchema = z.object({ url: z.url() });

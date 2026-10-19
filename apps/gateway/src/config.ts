@@ -7,11 +7,14 @@ const optional = z
   .optional()
   .transform((value) => value || undefined);
 
+/** Relative to apps/gateway, where npm runs the gateway scripts. */
+export const DEFAULT_DATABASE_PATH = './data/semanticauth.db';
+
 const EnvSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().positive().default(8787),
   WEB_BASE_URL: z.url().default('http://localhost:5173'),
-  DATABASE_PATH: z.string().min(1).default('./data/semanticauth.db'),
+  DATABASE_PATH: z.string().min(1).default(DEFAULT_DATABASE_PATH),
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
   GOOGLE_REDIRECT_URI: optional.pipe(z.url().optional()),

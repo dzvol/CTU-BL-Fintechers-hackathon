@@ -1,43 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { GoogleOAuthClient } from '../src/adapters/google-oauth/google-oauth-client';
 import { createApp } from '../src/app';
-import type { Config } from '../src/config';
-
-const config: Config = {
-  port: 0,
-  webBaseUrl: 'http://localhost:5173',
-  databasePath: ':memory:',
-  google: undefined,
-  sessionSecret: 'x'.repeat(64),
-  secureCookies: false,
-  userAllocation: 2_000_000n,
-};
-
-const fakeGoogle: GoogleOAuthClient = {
-  authorizationUrl: ({ state }) => `https://google.test/auth?state=${state}`,
-  exchangeCode: async () => ({ googleSub: 'google-1', email: 'alice@example.com', name: 'Alice' }),
-};
-
-/** name=value pairs from Set-Cookie, ready for a Cookie header. */
-function cookiesFrom(res: Response): string {
-  return res.headers
-    .getSetCookie()
-    .map((cookie) => cookie.split(';')[0])
-    .join('; ');
-}
-
-async function login(app: ReturnType<typeof createApp>) {
-  const start = await app.request('/auth/google/login');
-  const state = new URL(start.headers.get('location')!).searchParams.get('state');
-  const callback = await app.request(`/auth/google/callback?code=abc&state=${state}`, {
-    headers: { cookie: cookiesFrom(start) },
-  });
-  return { start, callback, sessionCookie: cookiesFrom(callback) };
-}
+import { cookiesFrom, createTestApp, login, testConfig } from './helpers';
 
 describe('Google login flow', () => {
   it('logs in, exposes /api/me and logs out', async () => {
-    const app = createApp(config, { googleOAuth: fakeGoogle });
+    const app = createTestApp();
 
     const { start, callback, sessionCookie } = await login(app);
     expect(start.status).toBe(302);
@@ -53,7 +20,7 @@ describe('Google login flow', () => {
 
     const out = await app.request('/auth/logout', {
       method: 'POST',
-      headers: { cookie: sessionCookie, origin: config.webBaseUrl },
+      headers: { cookie: sessionCookie, origin: testConfig.webBaseUrl },
     });
     expect(out.status).toBe(204);
 
@@ -62,16 +29,16 @@ describe('Google login flow', () => {
   });
 
   it('rejects a callback whose state does not match the cookie', async () => {
-    const app = createApp(config, { googleOAuth: fakeGoogle });
+    const app = createTestApp();
     const start = await app.request('/auth/google/login');
-    const res = await app.request('/auth/google/callback?code=abc&state=forged', {
+    const res = await app.request('/auth/google/callback?code=alice&state=forged', {
       headers: { cookie: cookiesFrom(start) },
     });
     expect(res.status).toBe(400);
   });
 
   it('rejects a cross-site logout (CSRF)', async () => {
-    const app = createApp(config, { googleOAuth: fakeGoogle });
+    const app = createTestApp();
     const { sessionCookie } = await login(app);
     const res = await app.request('/auth/logout', {
       method: 'POST',
@@ -81,12 +48,12 @@ describe('Google login flow', () => {
   });
 
   it('rejects /api/me without a session', async () => {
-    const app = createApp(config, { googleOAuth: fakeGoogle });
+    const app = createTestApp();
     expect((await app.request('/api/me')).status).toBe(401);
   });
 
   it('answers 503 when Google is not configured', async () => {
-    const app = createApp(config);
+    const app = createApp(testConfig);
     expect((await app.request('/auth/google/login')).status).toBe(503);
   });
 });
