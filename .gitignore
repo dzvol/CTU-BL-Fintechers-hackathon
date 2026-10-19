@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 coverage/
+agent-docs/
 *.tsbuildinfo
 
 # env & secrets
