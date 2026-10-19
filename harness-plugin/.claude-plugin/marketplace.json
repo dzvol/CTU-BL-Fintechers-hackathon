@@ -1,0 +1,16 @@
+{
+  "name": "semanticauth",
+  "owner": {
+    "name": "CTU BL Fintechers"
+  },
+  "metadata": {
+    "description": "SemanticAuth: authorization gateway for agentic x402 payments"
+  },
+  "plugins": [
+    {
+      "name": "semanticauth",
+      "source": "./integrations/claude-code",
+      "description": "Paid content for agents via x402, guarded by the SemanticAuth gateway"
+    }
+  ]
+}

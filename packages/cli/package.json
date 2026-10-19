@@ -12,6 +12,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@semanticauth/contracts": "^0.0.0"
+    "@inquirer/password": "^5.2.3",
+    "@semanticauth/agent": "^0.0.0",
+    "@semanticauth/contracts": "^0.0.0",
+    "commander": "^15.0.0"
   }
 }
