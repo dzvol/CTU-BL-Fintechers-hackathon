@@ -1,7 +1,8 @@
 import type { Intent, NormalizedOffer, Task } from '@semanticauth/contracts';
 import type { JevClient } from '../../adapters/jev/jev-client';
 import { decide, type Decision } from '../../domain/decision/decide';
-import { buildFacts } from '../../domain/facts/facts';
+import { buildFacts, type Purchase } from '../../domain/facts/facts';
+import { toJudgeState, type ScreenState } from '../../domain/jev/state';
 import type { Policy } from '../../domain/policy/policy';
 
 /**
@@ -10,20 +11,31 @@ import type { Policy } from '../../domain/policy/policy';
  */
 export async function evaluateOffer(
   deps: { policy: Policy; jev: JevClient },
-  input: { offer: NormalizedOffer; merchantText: unknown; intent: Intent; task: Task },
+  input: {
+    offer: NormalizedOffer;
+    /** Untrusted merchant text; goes to Screen only. */
+    screenState: ScreenState;
+    intent: Intent;
+    task: Task;
+    purchases: Purchase[];
+    allocation: bigint;
+    requestedUrl: string;
+  },
 ): Promise<Decision> {
-  const { offer, merchantText, intent, task } = input;
+  const { offer, screenState, intent, task, purchases, allocation, requestedUrl } = input;
+  const amount = BigInt(offer.amount);
 
-  const policy = deps.policy({ offer, intent, task });
-  if (!policy.ok) return decide({ policy });
+  const policy = deps.policy({ offer, intent, task, purchases, allocation });
+  if (!policy.ok) return decide({ policy, amount });
 
   try {
-    // Only Screen sees merchant text; Judge gets the intent, code-computed facts and Screen's output.
-    const screen = await deps.jev.screen({ merchantText });
-    const judge = await deps.jev.judge({ intent, facts: buildFacts({ offer, task }), screen });
-    return decide({ policy, screen, judge });
+    const screen = await deps.jev.screen(screenState);
+    // Judge gets the intent, code-computed facts and Screen's option keys, never merchant text.
+    const facts = buildFacts({ offer, intent, task, purchases, requestedUrl });
+    const judge = await deps.jev.judge(toJudgeState({ intent, facts, screen }));
+    return decide({ policy, amount, screen, judge });
   } catch (err) {
     console.warn('Jev failed, blocking:', err instanceof Error ? err.message : err);
-    return decide({ policy });
+    return decide({ policy, amount });
   }
 }

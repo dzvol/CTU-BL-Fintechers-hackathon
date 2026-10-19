@@ -1,5 +1,6 @@
 import type { IntentProposal } from '@semanticauth/contracts';
 import { describe, expect, it } from 'vitest';
+import { fakeJev } from '../../../test/fake-jev';
 import { fakeMerchantTransport } from '../../../test/fake-merchant';
 import { createStore, openDatabase } from '../../adapters/store';
 import { createServices } from '..';
@@ -23,6 +24,7 @@ function setup() {
   const services = createServices({
     store: createStore(openDatabase(':memory:')),
     transport: fakeMerchantTransport(),
+    jev: fakeJev(),
     userAllocation: 2_000_000n,
     webBaseUrl: 'http://dashboard.test',
     now: () => t,

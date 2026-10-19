@@ -16,6 +16,7 @@
     "dev:merchants": "npm run dev -w @semanticauth/test-merchants",
     "db:reset": "npm run db:reset -w @semanticauth/gateway",
     "demo:agent": "npm run demo:agent -w @semanticauth/gateway --",
+    "jev:eval": "npm run jev:eval -w @semanticauth/gateway --",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

@@ -1,7 +1,7 @@
 import type { IntentProposal } from '@semanticauth/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { fakeJev } from '../../../test/fake-jev';
 import { fakeMerchantTransport, INJECTION, MERCHANT } from '../../../test/fake-merchant';
-import type { JevClient } from '../../adapters/jev/jev-client';
 import { createStore, openDatabase } from '../../adapters/store';
 import { createServices } from '..';
 import type { AgentContext } from '../context';
@@ -18,10 +18,7 @@ const proposal: IntentProposal = {
 const PAID = `${MERCHANT}/paid`;
 
 function setup() {
-  const jev: JevClient = {
-    screen: vi.fn(async () => ({ signals: [] })),
-    judge: vi.fn(async () => ({ fitsIntent: true })),
-  };
+  const jev = fakeJev();
   const services = createServices({
     store: createStore(openDatabase(':memory:')),
     transport: fakeMerchantTransport(),
