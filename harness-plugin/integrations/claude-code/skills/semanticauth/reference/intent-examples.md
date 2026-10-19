@@ -24,6 +24,7 @@ fewer blocked or reviewed purchases; a vague one means the user cannot judge wha
   "purpose": "Buy up to three paywalled news articles about this week's ECB rate decision to summarise them.",
   "task": "Summarise what the media wrote about the ECB decision.",
   "allowedPurchases": ["news articles"],
+  "forbidden": ["subscriptions"],
   "budgetUsdc": "1.00",
   "maxPerPurchaseUsdc": "0.40",
   "plannedPurchases": 3
@@ -37,6 +38,7 @@ fewer blocked or reviewed purchases; a vague one means the user cannot judge wha
   "purpose": "Buy a CSV of daily EUR/CZK rates for 2025 from a data API to compute monthly volatility.",
   "task": "Compute the monthly EUR/CZK volatility for 2025.",
   "allowedPurchases": ["FX rate datasets"],
+  "forbidden": ["subscriptions", "real-time trading feeds"],
   "budgetUsdc": "0.30",
   "maxPerPurchaseUsdc": "0.30",
   "plannedPurchases": 1
@@ -60,7 +62,9 @@ everything, the limits are a maximum instead of what the task needs, and the tas
 
 ## Rules of thumb
 
-- `maxPerPurchaseUsdc` ≈ the highest price you actually saw, rounded up a little.
-- `budgetUsdc` ≈ `maxPerPurchaseUsdc` × `plannedPurchases`.
+- The limits come from the user. If they did not give them, ask; these rules only help you
+  suggest values for the user to confirm.
+- Suggested `maxPerPurchaseUsdc` ≈ the highest price you actually saw, rounded up a little.
+- Suggested `budgetUsdc` ≈ `maxPerPurchaseUsdc` × `plannedPurchases`.
 - Investments, trading, deposits, gambling, payments to individuals and "unlock / verify your
   account" fees are always forbidden by the mandate; no need to list them.
