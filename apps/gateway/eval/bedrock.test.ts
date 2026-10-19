@@ -4,7 +4,15 @@ import { createHttpJevClient } from '../src/adapters/jev/jev-client';
 import { JUDGE_QUESTIONS } from '../src/domain/jev/judge-questions';
 import type { Questions } from '../src/domain/jev/questions';
 import { SCREEN_QUESTIONS } from '../src/domain/jev/screen-questions';
-import { answerSchema, createBedrockFetch, extractJson, normalize, toJevAnswers } from './bedrock';
+import {
+  answerSchema,
+  createBedrockFetch,
+  extractJson,
+  normalize,
+  parseModel,
+  toJevAnswers,
+  withPrompt,
+} from './bedrock';
 
 const config = { url: 'https://bedrock.invalid', apiKey: 'x', model: 'm', timeoutMs: 5_000 };
 
@@ -107,6 +115,32 @@ describe('Bedrock stand-in for Jev', () => {
     expect(answers.n).toEqual({ type: 'noul', noul: 0.8 });
     expect(answers.c).toMatchObject({ type: 'choice', choice: 'y', confidence: 0.7 });
     expect(answers.s).toEqual({ type: 'score', score: 1.5 });
+  });
+
+  it('selects the prompt from the model suffix and asks v2 for reasoning first', async () => {
+    const sent: ConverseCommandInput[] = [];
+    const send = async (input: ConverseCommandInput) => {
+      sent.push(input);
+      return reply(JSON.stringify(confidentAnswer(SCREEN_QUESTIONS as Questions)));
+    };
+    const fetchV2 = createBedrockFetch({ send });
+    await createHttpJevClient({ ...config, model: withPrompt('qwen', 'v2') }, fetchV2).screen(
+      {} as never,
+    );
+    await createHttpJevClient({ ...config, model: 'qwen' }, fetchV2).screen({} as never);
+
+    expect(sent.map((s) => s.modelId)).toEqual(['qwen', 'qwen']);
+    expect(sent[0]!.system![0]!.text).toContain('x402');
+    expect(sent[1]!.system![0]!.text).not.toContain('x402');
+    const format = sent[0]!.outputConfig as unknown as {
+      textFormat: { structure: { jsonSchema: { schema: string } } };
+    };
+    const schema = JSON.parse(format.textFormat.structure.jsonSchema.schema) as {
+      properties: Record<string, { required: string[] }>;
+    };
+    expect(Object.values(schema.properties)[0]!.required[0]).toBe('reasoning');
+    expect(parseModel('qwen#prompt-v2')).toEqual({ modelId: 'qwen', prompt: 'v2' });
+    expect(() => parseModel('qwen#prompt-v9')).toThrow();
   });
 
   it('extracts the JSON object from surrounding text', () => {

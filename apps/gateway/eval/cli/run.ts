@@ -5,6 +5,8 @@
 //   --offline        answer only from the cache (no Jev key needed, no spend)
 //   --bedrock id     answer Jev's questions with a Bedrock model instead of Jev, for comparison
 //                    (AWS_PROFILE=hackathon after aws sso login; see eval/README.md)
+//   --bedrock-prompt v1|v2  v1 (default): Jev's input as is; v2: prompt with context, examples
+//                    and reasoning (see eval/bedrock.ts)
 //   --limit N        first N cases per suite (smoke runs)
 //   --concurrency N  parallel cases (default 8)
 //   --thresholds f   JSON Thresholds instead of the variant's own (one variant only)
@@ -27,7 +29,14 @@ import {
   type JevVariantId,
 } from '../../src/domain/jev/variants';
 import { EvalCaseSchema, SplitSchema, SuiteSchema, type EvalCase } from '../cases';
-import { BEDROCK_PRICES, createBedrockFetch } from '../bedrock';
+import {
+  BEDROCK_PRICES,
+  createBedrockFetch,
+  parseModel,
+  PROMPT_VERSIONS,
+  withPrompt,
+  type PromptVersion,
+} from '../bedrock';
 import { createCachedFetch, questionsHash } from '../jev-cache';
 import { readJsonl, writeJson } from '../jsonl';
 import { percentile } from '../metrics';
@@ -75,7 +84,11 @@ for (const id of snapshotName ? variantIds : []) {
 }
 
 const offline = args.has('offline');
-const bedrockModel = args.get('bedrock');
+const bedrockPrompt = (args.get('bedrock-prompt') ?? 'v1') as PromptVersion;
+if (!PROMPT_VERSIONS.includes(bedrockPrompt))
+  fail(`Unknown --bedrock-prompt "${bedrockPrompt}". Known: ${PROMPT_VERSIONS.join(', ')}`);
+// The prompt version is part of the model name, so the cache keeps v1 and v2 answers apart.
+const bedrockModel = args.get('bedrock') && withPrompt(args.get('bedrock')!, bedrockPrompt);
 const config = offline || bedrockModel ? undefined : loadConfig();
 if (!offline && !bedrockModel && !config?.jev) fail('JEV_API_KEY is not set (or use --offline).');
 const bedrockConfig = bedrockModel && {
@@ -178,7 +191,7 @@ const casesManifest = JSON.parse(
 ) as unknown;
 
 /** Jev bills input only; Bedrock Claude bills both; other Bedrock models report tokens only. */
-const bedrockPrice = bedrockModel ? BEDROCK_PRICES[bedrockModel] : undefined;
+const bedrockPrice = bedrockModel ? BEDROCK_PRICES[parseModel(bedrockModel).modelId] : undefined;
 const costOf = (stats: { inputTokens: number; outputTokens: number }): number | null =>
   bedrockModel
     ? bedrockPrice

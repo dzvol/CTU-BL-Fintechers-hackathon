@@ -192,6 +192,12 @@ npm run eval:compare -- baseline sonnet-4-5
   `--concurrency` low. Qwen, gpt-oss, GLM and Nova have far higher limits for bulk runs.
 - Claude 5 models are not available in the hackathon accounts; use the 4.5 family.
 - The manifest records `provider`, input and output tokens, and USD cost for the Claude models.
+- `--bedrock-prompt v1` (default) gives the LLM exactly Jev's input under a short generic system
+  prompt: model against model. `--bedrock-prompt v2` helps the LLM with x402 context, attack
+  descriptions, three hand-written examples and a reasoning field per question: how far prompt
+  engineering closes the gap, and at what cost. The version is part of the model name
+  (`<id>#prompt-v2`), so cache entries and snapshots of v1 and v2 never mix. Jev itself takes no
+  prompt; its question variants are `--variant`.
 
 ## Rules that keep the numbers defensible
 
