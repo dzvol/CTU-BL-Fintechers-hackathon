@@ -5,6 +5,7 @@ import {
   type GoogleOAuthClient,
 } from './adapters/google-oauth/google-oauth-client';
 import { createStore, openDatabase } from './adapters/store';
+import { createHttpX402Transport, type X402Transport } from './adapters/x402';
 import { createAuthRoutes } from './api/dashboard/auth-routes';
 import { createDashboardRoutes } from './api/dashboard/dashboard-routes';
 import { handleError } from './api/errors';
@@ -18,6 +19,7 @@ import { createServices } from './services';
 /** Swappable dependencies, used by tests. */
 export interface AppOverrides {
   googleOAuth?: GoogleOAuthClient;
+  x402Transport?: X402Transport;
   now?: () => Date;
 }
 
@@ -31,6 +33,9 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
   const sessions = createSessionService({ sessions: store.sessions, now: overrides.now });
   const services = createServices({
     store,
+    transport:
+      overrides.x402Transport ??
+      createHttpX402Transport({ allowHttpLocalhost: config.x402AllowHttpLocalhost }),
     userAllocation: config.userAllocation,
     webBaseUrl: config.webBaseUrl,
     now: overrides.now,

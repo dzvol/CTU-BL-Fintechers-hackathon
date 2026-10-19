@@ -1,6 +1,7 @@
-import { createPassThroughJev } from '../adapters/jev/jev-client';
+import { createPassThroughJev, type JevClient } from '../adapters/jev/jev-client';
 import type { Store } from '../adapters/store';
-import { passThroughPolicy } from '../domain/policy/policy';
+import type { X402Transport } from '../adapters/x402';
+import { passThroughPolicy, type Policy } from '../domain/policy/policy';
 import { createAccountService } from './account/account-service';
 import { createApiKeyService } from './account/api-key-service';
 import { createIntentService } from './intent/intent-service';
@@ -11,8 +12,12 @@ import { createTaskService } from './task/task-service';
 /** Wires all application services. Shared by the app and tests (which pass a fixed clock). */
 export function createServices(deps: {
   store: Store;
+  transport: X402Transport;
   userAllocation: bigint;
   webBaseUrl: string;
+  /** Default to pass-through stubs until the real Policy and Jev exist. */
+  policy?: Policy;
+  jev?: JevClient;
   now?: () => Date;
 }) {
   const { store, now } = deps;
@@ -54,8 +59,9 @@ export function createServices(deps: {
       tasks,
       intents,
       transaction: store.transaction,
-      policy: passThroughPolicy,
-      jev: createPassThroughJev(),
+      transport: deps.transport,
+      policy: deps.policy ?? passThroughPolicy,
+      jev: deps.jev ?? createPassThroughJev(),
       now,
     }),
     reviews: createReviewService(),

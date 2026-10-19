@@ -20,7 +20,7 @@ describe('paid_fetch over MCP + operations in the dashboard', () => {
 
     const noTask = await agent.callTool({
       name: 'paid_fetch',
-      arguments: { url: 'https://merchant.example/data' },
+      arguments: { url: 'https://merchant.test/paid' },
     });
     expect(noTask.isError).toBe(true);
     expect(JSON.stringify(noTask.content)).toContain('no_active_task');
@@ -31,7 +31,7 @@ describe('paid_fetch over MCP + operations in the dashboard', () => {
 
     const result = await agent.callTool({
       name: 'paid_fetch',
-      arguments: { url: 'https://merchant.example/data' },
+      arguments: { url: 'https://merchant.test/paid' },
     });
     expect(result.isError).toBeFalsy();
     const operation = result.structuredContent as { operationId: string; state: string };

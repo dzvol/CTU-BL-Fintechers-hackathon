@@ -2,6 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { GoogleOAuthClient } from '../src/adapters/google-oauth/google-oauth-client';
 import { createApp } from '../src/app';
+import { fakeMerchantTransport } from './fake-merchant';
 import type { Config } from '../src/config';
 
 export type TestApp = ReturnType<typeof createApp>;
@@ -14,6 +15,7 @@ export const testConfig: Config = {
   sessionSecret: 'x'.repeat(64),
   secureCookies: false,
   userAllocation: 2_000_000n,
+  x402AllowHttpLocalhost: false,
 };
 
 /** Fake Google: the callback `code` becomes the Google account id, so tests can log in as anyone. */
@@ -22,7 +24,8 @@ export const fakeGoogle: GoogleOAuthClient = {
   exchangeCode: async ({ code }) => ({ googleSub: code, email: `${code}@example.com` }),
 };
 
-export const createTestApp = () => createApp(testConfig, { googleOAuth: fakeGoogle });
+export const createTestApp = () =>
+  createApp(testConfig, { googleOAuth: fakeGoogle, x402Transport: fakeMerchantTransport() });
 
 /** name=value pairs from Set-Cookie, ready for a Cookie header. */
 export function cookiesFrom(res: Response): string {
