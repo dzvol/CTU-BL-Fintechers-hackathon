@@ -23,6 +23,8 @@ export interface CaseRecord {
   split: EvalCase['split'];
   group: string;
   source: string;
+  /** Who wrote or checked the expected outcome; "draft:…" = an agent's draft, not reviewed yet. */
+  author?: string;
   labels: EvalCase['labels'];
   expected: EvalCase['expected'];
   /** USDC atomic units, for amount-dependent thresholds (judge-pairs, e2e). */
@@ -94,6 +96,7 @@ export async function runCase(c: EvalCase, jev: JevClient): Promise<CaseRecord> 
     split: c.split,
     group: c.group,
     source: c.source,
+    author: c.author,
     labels: c.labels,
     expected: c.expected,
   };

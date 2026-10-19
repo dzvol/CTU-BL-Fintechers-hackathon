@@ -28,6 +28,31 @@ export const NEUTRAL_JUDGE = {
   severity: 0,
 } as JudgeAnswers;
 
+/** Screen answers that trigger none of Screen's rules; the extraction stays for Judge. */
+export const quietScreen = (s: ScreenAnswers): ScreenAnswers => ({
+  ...s,
+  instruction_override: 0,
+  targets_approval: 0,
+  authority_claim: 0,
+  payee_change: 0,
+  other_destination: 0,
+  urgency: 0,
+  deliverable_stated: 1,
+  purpose_consistency: { choice: 'consistent', confidence: 1, probabilities: { consistent: 1 } },
+  billing_basis: { choice: 'one_time_purchase', confidence: 1, probabilities: {} },
+  offer_type: { choice: 'one_time_product', confidence: 1, probabilities: {} },
+});
+
+/** The records as if Jev were not there: whatever Policy lets through is paid. */
+export const asPolicyOnly = (records: readonly CaseRecord[]): CaseRecord[] =>
+  records.map((r) => ({
+    ...r,
+    error: undefined,
+    screen: r.screen && quietScreen(r.screen),
+    judge: r.judge && NEUTRAL_JUDGE,
+    judgeOracle: r.judgeOracle && NEUTRAL_JUDGE,
+  }));
+
 /** Strongest manipulation signal, the score for ROC curves. */
 export const manipulationScore = (screen: ScreenAnswers) =>
   Math.max(...MANIPULATION.map((q) => screen[q]));
@@ -53,6 +78,9 @@ export function predictRelation(
   if (judge.mandate_rules.choice === 'forbidden') return 'forbidden';
   if (judge.mandate_purpose.choice === 'outside_purpose') return 'off_intent';
   if (judge.task_relation.choice === 'unrelated') return 'off_intent';
+  if (judge.topic_fit?.choice === 'different_subject' && t.rules?.topicMismatch === 'block') {
+    return 'off_intent';
+  }
   const support = (answer: { probabilities: Partial<Record<string, number>> }, options: string[]) =>
     options.reduce((sum, o) => sum + (answer.probabilities[o] ?? 0), 0);
   const required = requiredSupport(amount, t);

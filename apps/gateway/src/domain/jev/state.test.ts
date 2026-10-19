@@ -72,4 +72,18 @@ describe('toJudgeState', () => {
     } as typeof HONEST_SCREEN;
     expect(JSON.stringify(toJudgeState({ intent, facts: {}, screen }))).not.toContain('IGNORE');
   });
+
+  it("passes Screen's subject area as an option key when the variant asks it", () => {
+    const screen = {
+      ...HONEST_SCREEN,
+      subject_area: { ...c('weather_climate', 0.8), note: INJECTION },
+    } as typeof HONEST_SCREEN;
+    const state = toJudgeState({ intent, facts: {}, screen });
+    expect(state.offer_as_extracted_from_merchant_text.subject_area).toBe('weather_climate');
+    expect(JSON.stringify(state)).not.toContain('IGNORE');
+    expect(
+      toJudgeState({ intent, facts: {}, screen: HONEST_SCREEN })
+        .offer_as_extracted_from_merchant_text,
+    ).not.toHaveProperty('subject_area');
+  });
 });

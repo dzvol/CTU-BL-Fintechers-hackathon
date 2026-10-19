@@ -41,3 +41,18 @@ export type AnswerOf<Q> = Q extends { type: 'noul' }
       : never;
 
 export type Answers<Qs extends Questions> = { [K in keyof Qs]: AnswerOf<Qs[K]> };
+
+/** Any question with the same answer type as Q: the wording may differ, the option keys may not. */
+export type SameAnswerAs<Q extends Question> = Q extends ChoiceQuestion
+  ? ChoiceQuestion<Extract<keyof Q['criteria'], string>>
+  : Q extends NoulQuestion
+    ? NoulQuestion
+    : ScoreQuestion;
+
+/**
+ * A question set that answers at least everything `Base` asks, with the same answer types, plus
+ * any extra questions. Lets a variant reword or add questions without breaking the decision table.
+ */
+export type QuestionSetLike<Base extends Questions> = {
+  [K in keyof Base]: SameAnswerAs<Base[K]>;
+} & Questions;

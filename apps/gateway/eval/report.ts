@@ -1,7 +1,7 @@
 // Turns recorded answers into the numbers we defend: rates with intervals, ROC, confusion
 // matrices, ablations. Needs no Jev: everything is derived from the records.
 import type { Verdict } from '@semanticauth/contracts';
-import type { Thresholds } from '../src/domain/decision/decide';
+import { decide, type Thresholds } from '../src/domain/decision/decide';
 import type { ScreenAnswers } from '../src/domain/jev/screen-questions';
 import type { EvalCaseOf } from './cases';
 import { auroc, confusion, mcnemar, pct, tprAtFpr, wilson, type Rate } from './metrics';
@@ -9,6 +9,7 @@ import {
   ABLATIONS,
   manipulationScore,
   MANIPULATION,
+  NEUTRAL_JUDGE,
   OTHER_RECIPIENT,
   predictRelation,
   predictScreen,
@@ -55,6 +56,33 @@ export function summarizeScreen(records: CaseRecord[], t: Thresholds) {
       Object.entries(groupBy(rs, (r) => label(r, 'source'))).map(([k, v]) => [k, rates(v)]),
     );
 
+  // What the decision table does with honest offers on Screen's signals alone (Judge neutral,
+  // Policy passed): the manipulation rates above miss REVIEWs from the other Screen rules.
+  const decisions = (rs: typeof answered) => {
+    const outcome = rs.map((r) =>
+      decide({ policy: { ok: true }, amount: 10_000n, screen: r.screen, judge: NEUTRAL_JUDGE }, t),
+    );
+    return {
+      review: wilson(
+        count(outcome, (d) => d.verdict === 'REVIEW'),
+        rs.length,
+      ),
+      block: wilson(
+        count(outcome, (d) => d.verdict === 'BLOCK'),
+        rs.length,
+      ),
+      reasons: Object.fromEntries(
+        Object.entries(
+          groupBy(
+            outcome.filter((d) => d.verdict !== 'ALLOW'),
+            (d) => `${d.verdict} ${d.detail}`,
+          ),
+        ).map(([k, v]) => [k, v.length]),
+      ),
+    };
+  };
+  const realOffers = benign.filter((r) => label(r, 'source') === 'bazaar');
+
   const scored = [...attacks, ...benign];
   const positive = scored.map((r) => expected(r).injection);
   const questionAuroc = Object.fromEntries(
@@ -78,7 +106,11 @@ export function summarizeScreen(records: CaseRecord[], t: Thresholds) {
         ]),
       ),
     },
-    benign: { ...rates(benign), bySource: bySource(benign) },
+    benign: {
+      ...rates(benign),
+      bySource: bySource(benign),
+      realOfferDecisions: realOffers.length ? decisions(realOffers) : undefined,
+    },
     recipientChange: {
       caught: wilson(
         count(redirects, (r) => flag(r).recipientChange || flag(r).injection !== 'none'),
@@ -231,8 +263,22 @@ export function summarizeE2e(records: CaseRecord[], t: Thresholds) {
   };
 }
 
+/** An agent's draft label or case that no person has checked yet. */
+export const isDraft = (r: Pick<CaseRecord, 'author'>) => /draft:/i.test(r.author ?? '');
+
+/** How many cases per suite rest on unreviewed drafts: their numbers don't support claims yet. */
+export function summarizeProvenance(records: CaseRecord[]) {
+  return Object.fromEntries(
+    Object.entries(groupBy(records, (r) => r.suite)).map(([suite, rs]) => [
+      suite,
+      { cases: rs.length, drafts: count(rs, isDraft) },
+    ]),
+  );
+}
+
 export function summarize(records: CaseRecord[], t: Thresholds) {
   return {
+    provenance: summarizeProvenance(records),
     screen: summarizeScreen(records, t),
     judge: summarizeJudge(records, t),
     e2e: summarizeE2e(records, t),
@@ -253,6 +299,15 @@ export function toMarkdown(summary: Summary, manifest: Record<string, unknown>):
     '```',
     '',
   ];
+  const drafts = Object.entries(summary.provenance ?? {}).filter(([, p]) => p.drafts > 0);
+  if (drafts.length) {
+    out.push(
+      '> **Unreviewed agent drafts.** These cases rest on labels or expected outcomes drafted by',
+      '> an agent and not yet checked by a person; use them to iterate, not as evidence:',
+      ...drafts.map(([suite, p]) => `> ${suite}: ${p.drafts} of ${p.cases}`),
+      '',
+    );
+  }
   const s = summary.screen;
   if (s) {
     out.push(
@@ -266,6 +321,15 @@ export function toMarkdown(summary: Summary, manifest: Record<string, unknown>):
       `AUROC (max of manipulation questions): ${s.auroc.toFixed(3)} · TPR at FPR ≤ 1 %: ${(s.tprAt1PctFpr.tpr * 100).toFixed(1)} % (threshold ${s.tprAt1PctFpr.threshold.toFixed(2)})`,
       `Recipient change caught: ${rateCell(s.recipientChange.caught)} · flagged on benign: ${rateCell(s.recipientChange.falseOnBenign)}`,
       '',
+      ...(s.benign.realOfferDecisions
+        ? [
+            `Real Bazaar offers through the decision table (Screen rules only): REVIEW ${rateCell(s.benign.realOfferDecisions.review)} · BLOCK ${rateCell(s.benign.realOfferDecisions.block)}`,
+            ...Object.entries(s.benign.realOfferDecisions.reasons).map(
+              ([reason, n]) => `- ${reason}: ${n}`,
+            ),
+            '',
+          ]
+        : []),
       row(['question', 'AUROC']),
       row(['---', '---']),
       ...Object.entries(s.questionAuroc).map(([q, v]) =>
@@ -335,6 +399,15 @@ export function toMarkdown(summary: Summary, manifest: Record<string, unknown>):
       `Cases: ${e.cases} (+${e.ambiguous} ambiguous, not scored) · Jev errors: ${e.errors}`,
       '',
     );
+    const full = e.configs.full;
+    if (full) {
+      out.push(
+        row(['category (full)', 'correct']),
+        row(['---', '---']),
+        ...Object.entries(full.byCategory).map(([k, v]) => row([k, rateCell(v)])),
+        '',
+      );
+    }
   }
   return out.join('\n');
 }

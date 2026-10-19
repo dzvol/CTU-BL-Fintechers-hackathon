@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { HONEST_JUDGE, HONEST_SCREEN } from '../../../test/fake-jev';
 import { JUDGE_QUESTIONS } from '../../domain/jev/judge-questions';
 import type { Questions } from '../../domain/jev/questions';
-import { SCREEN_QUESTIONS } from '../../domain/jev/screen-questions';
+import { SCREEN_QUESTIONS, SCREEN_QUESTIONS_V2 } from '../../domain/jev/screen-questions';
+import { QUESTIONS_V2 } from '../../domain/jev/variants';
 import type { JudgeState, ScreenState } from '../../domain/jev/state';
 import { createHttpJevClient, createUnconfiguredJev } from './jev-client';
 
@@ -92,6 +93,30 @@ describe('HTTP Jev client', () => {
   ])('fails on %s', async (_name, respond) => {
     const { jev } = client(respond);
     await expect(jev.screen(screenState)).rejects.toThrow();
+  });
+
+  it("asks a variant's questions and requires every one of them", async () => {
+    const answers = {
+      ...HONEST_SCREEN,
+      subject_area: { choice: 'crypto_markets', confidence: 0.9 },
+    };
+    const fetchFn = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const { questions } = JSON.parse(init!.body as string) as { questions: Questions };
+      return reply(wire(questions, answers));
+    });
+    const jev = createHttpJevClient(config, fetchFn as typeof fetch, QUESTIONS_V2);
+    expect((await jev.screen(screenState)).subject_area?.choice).toBe('crypto_markets');
+    expect(JSON.parse(fetchFn.mock.calls[0]![1]!.body as string).questions).toEqual(
+      SCREEN_QUESTIONS_V2,
+    );
+
+    // A v1 answer set lacks subject_area: invalid for this variant.
+    const v1Only = createHttpJevClient(
+      config,
+      (async () => reply(wire(SCREEN_QUESTIONS, HONEST_SCREEN))) as typeof fetch,
+      QUESTIONS_V2,
+    );
+    await expect(v1Only.screen(screenState)).rejects.toThrow('invalid response');
   });
 
   it('gives up after the timeout', async () => {

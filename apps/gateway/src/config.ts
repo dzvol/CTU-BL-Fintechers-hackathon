@@ -3,6 +3,12 @@ import { parseUsdc, UsdcDecimalSchema } from '@semanticauth/contracts';
 import { z } from 'zod';
 import { loadChainReaderConfig, type ChainReaderConfig } from './adapters/chain-reader';
 import type { JevConfig } from './adapters/jev/jev-client';
+import {
+  DEFAULT_VARIANT,
+  JEV_VARIANT_IDS,
+  JEV_VARIANTS,
+  type JevVariant,
+} from './domain/jev/variants';
 import { loadSignerConfig, type SignerConfig } from './adapters/signer';
 
 const optional = z
@@ -33,6 +39,7 @@ const EnvSchema = z.object({
   JEV_API_KEY: optional,
   JEV_MODEL: optional,
   JEV_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  JEV_VARIANT: z.enum(JEV_VARIANT_IDS).default(DEFAULT_VARIANT),
 });
 
 const DEFAULT_JEV_API_URL = 'https://api.typesafe.ai';
@@ -57,6 +64,8 @@ export interface Config {
   x402AllowHttpLocalhost: boolean;
   /** Undefined without JEV_API_KEY; every paid offer is then blocked (fail closed). */
   jev: JevConfig | undefined;
+  /** Which questions Jev is asked and how its answers are read (eval: npm run eval). */
+  jevVariant: JevVariant;
   payments: PaymentsConfig;
 }
 
@@ -113,6 +122,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
           timeoutMs: e.JEV_TIMEOUT_MS,
         }
       : undefined,
+    jevVariant: JEV_VARIANTS[e.JEV_VARIANT],
     payments: {
       signer: e.SPONSOR_PRIVATE_KEY ? loadSignerConfig(env) : undefined,
       chainReader: loadChainReaderConfig(env),

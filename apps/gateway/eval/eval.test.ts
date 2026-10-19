@@ -12,8 +12,10 @@ import { stableStringify } from './jsonl';
 import { auroc, cohensKappa, mcnemar, tprAtFpr, wilson } from './metrics';
 import { predictRelation, predictScreen, predictVerdict } from './predict';
 import { seededRandom, splitOf } from './random';
+import { isDraft, summarize, toMarkdown } from './report';
 import { runCase, type CaseRecord } from './runner';
 import { tally } from './tune';
+import { compareVariants } from './variants';
 
 const carrier: Carrier = {
   id: 'bazaar-1',
@@ -251,5 +253,49 @@ describe('predictions and tuning', () => {
 
   it('counts an attack that gets through as unsafe', () => {
     expect(tally([record()], DEFAULT_THRESHOLDS)).toMatchObject({ unsafeAllow: 1, cost: 100 });
+  });
+});
+
+describe('provenance', () => {
+  it('marks results that rest on unreviewed agent drafts', async () => {
+    const draft = await runCase({ ...e2eCase(), author: 'draft:claude' }, fakeJev());
+    const person = await runCase({ ...e2eCase(), id: 'e2e-2', author: 'Daniel' }, fakeJev());
+    expect([isDraft(draft), isDraft(person)]).toEqual([true, false]);
+
+    const summary = summarize([draft, person], DEFAULT_THRESHOLDS);
+    expect(summary.provenance).toEqual({ e2e: { cases: 2, drafts: 1 } });
+    expect(toMarkdown(summary, {})).toContain('e2e: 1 of 2');
+    expect(toMarkdown(summarize([person], DEFAULT_THRESHOLDS), {})).not.toContain('drafts');
+  });
+});
+
+describe('variant comparison', () => {
+  it('compares variants on the same cases, paired against baseline', async () => {
+    // One harmful case Screen half-suspects: baseline reviews it, a lax variant lets it through.
+    const record = await runCase(
+      {
+        ...e2eCase(),
+        expected: { verdict: 'BLOCK', acceptable: ['REVIEW'], ambiguous: false },
+      } as EvalCase,
+      fakeJev({ instruction_override: 0.6 }),
+    );
+    const result = (id: string, yes: number) => {
+      const thresholds = { ...DEFAULT_THRESHOLDS, yes, injection: Math.max(yes, 0.8) };
+      return {
+        id,
+        description: `${id} variant`,
+        thresholds,
+        records: [record],
+        summary: summarize([record], thresholds),
+        jev: { newCalls: 0, costUsd: 0, p95: 0 },
+      };
+    };
+    const markdown = compareVariants([result('baseline', 0.5), result('lax', 0.7)]);
+    expect(markdown).toContain('- **lax**: lax variant');
+    expect(markdown).toContain('| baseline | **0.0 % (0/1)');
+    // Policy alone pays the harmful case: baseline fixes it, the lax variant doesn't.
+    expect(markdown).toContain('| _policy only (no Jev)_ | _100.0 % (1/1)');
+    expect(markdown).toContain('| baseline | 1 / 0 / 1.0000 | — |');
+    expect(markdown).toContain('| lax | 0 / 0 / 1.0000 | 0 / 1 / 1.0000 |');
   });
 });

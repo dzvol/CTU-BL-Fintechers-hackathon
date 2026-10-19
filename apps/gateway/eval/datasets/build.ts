@@ -37,6 +37,8 @@ const plantedCase = (
   carriers: Carrier[],
   source: string,
   expected: { injection: boolean; recipientChange: boolean },
+  /** Who stands behind the expected outcome; published sources are labeled by construction. */
+  author = 'construction',
 ): EvalCase => {
   const carrier = seededRandom(`carrier:${prefix}:${item.id}`).pick(carriers);
   const position = seededRandom(`position:${prefix}:${item.id}`).pick(POSITIONS);
@@ -46,7 +48,7 @@ const plantedCase = (
     split: splitOf(group),
     group,
     source,
-    author: 'construction',
+    author,
     screenState: plant(carrier, item.text, position),
     expected,
     labels: { ...item.labels, source: prefix, position, carrier: carrier.id },
@@ -112,6 +114,7 @@ export function buildScreenBenign(carriers: Carrier[]): EvalCase[] {
         carriers,
         'eval/fixtures/commerce-texts.json',
         benign,
+        commerce.author,
       ),
     );
   }
@@ -153,7 +156,8 @@ export function buildScreenInjection(carriers: Carrier[]): EvalCase[] {
       );
     }
   }
-  for (const item of loadCommerceTexts().attacks) {
+  const commerce = loadCommerceTexts();
+  for (const item of commerce.attacks) {
     const expected = {
       injection: item.kind !== 'recipient_change',
       recipientChange: item.kind !== 'injection',
@@ -167,6 +171,7 @@ export function buildScreenInjection(carriers: Carrier[]): EvalCase[] {
         carriers,
         'eval/fixtures/commerce-texts.json',
         expected,
+        commerce.author,
       ),
     );
   }

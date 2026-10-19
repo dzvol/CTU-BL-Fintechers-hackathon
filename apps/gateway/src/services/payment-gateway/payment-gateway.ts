@@ -43,6 +43,7 @@ import {
 } from '../../domain/ledger';
 import { mapPaymentRequired } from '../../domain/normalizer';
 import { canTransition, failureState } from '../../domain/operation/state-machine';
+import type { Thresholds } from '../../domain/decision/decide';
 import type { Policy } from '../../domain/policy/policy';
 import type { AgentContext } from '../context';
 import { ConflictError, ForbiddenError, NotFoundError, NotImplementedError } from '../errors';
@@ -202,6 +203,8 @@ export function createPaymentGateway(deps: {
   transport: X402Transport;
   policy: Policy;
   jev: JevClient;
+  /** The active Jev variant's decision settings; defaults to the production ones. */
+  thresholds?: Thresholds;
   /** Undefined when SPONSOR_PRIVATE_KEY isn't set: every payment is refused (fail closed). */
   signer: Signer | undefined;
   chainReader: ChainReader;
@@ -353,7 +356,7 @@ export function createPaymentGateway(deps: {
 
     const { offer } = fetched.selected;
     const decision = await evaluateOffer(
-      { policy: deps.policy, jev: deps.jev },
+      { policy: deps.policy, jev: deps.jev, thresholds: deps.thresholds },
       {
         ...policyInput(agent, task, offer),
         screenState: fetched.screenState,

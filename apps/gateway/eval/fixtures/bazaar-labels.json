@@ -1,1 +1,2617 @@
-[]
+[
+  {
+    "carrierId": "bazaar-8cf7c52c80",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-4284ed21c5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-887282c6d1",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-4faccc44a6",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Extracts contact details from text the buyer supplies; ships no third-party data, hence no personal data."
+  },
+  {
+    "carrierId": "bazaar-00aa1ef856",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-9afee08be1",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e56d45cb23",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ea29d7095e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7eadee702b",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Risk ratings about yield products, not a yield product itself; crypto_data rather than trading_signals."
+  },
+  {
+    "carrierId": "bazaar-486d88812b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-4dccf6cfdd",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0bdd8e7164",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6acc0d8d4e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-46a60830a1",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-91544bcb99",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f9da763494",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-42c0c4d3b6",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-80cdd6feb9",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-794ffa111a",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-26a533d44b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-3ba5341d06",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0239fdaa13",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-41f4c0f0c0",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-bbc35ac391",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c7923a7068",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e8042c77d8",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-af8d3e589c",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cd8a8a7666",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f4fe9cebb5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5bcc9593c5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6bf5e80575",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "advertising_marketing",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "yes"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-d9cf32b98f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-635a6c6486",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "education",
+      "deliverable_kind": "learning_content",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0b2ad887a5",
+    "category": "trading_signals",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Prediction-market scores with SKIP/WATCH/TRADE tiers: a trading signal."
+  },
+  {
+    "carrierId": "bazaar-cca65f3b0d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-d8b8c19bc4",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2bd61a29bc",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "unknown",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0eba20e031",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-8a850ff6fe",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c6dc892ff2",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-664b208644",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-b4e6f04e17",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "yes"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6e6e9cfc80",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f0c00c1bac",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1bbc245a74",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-b382f4f510",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-59323fa9a9",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "database_storage",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ea8e74edf3",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5f06f88f44",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "News-derived market sentiment; could also be read as a trading signal."
+  },
+  {
+    "carrierId": "bazaar-bd1838fcbb",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c3b03e21a2",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e780ad8a4e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6180f1d5ca",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fc4663b57b",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-4cb4309df3",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "education",
+      "deliverable_kind": "learning_content",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "A guide about staking returns, not a staking product."
+  },
+  {
+    "carrierId": "bazaar-466fe86cd8",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-3694d92bbf",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-8354f6df87",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-da37291b1d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1b2c584b80",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ed4cfe509e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-eebcd3a368",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2134c9fd84",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a1338c6501",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-3f547bbe61",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0c974e6230",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "yes"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-046c7a5fe5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2a8d44d36e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cd6738b792",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "unknown",
+      "deliverable_kind": "learning_content",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "unknown",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-aa12740d60",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f9f624f798",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a38b0614e3",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ca2344d99a",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6e182c01bb",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-26361f3bc0",
+    "category": "weather",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a0f102f54b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5375428015",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-b9e13c2c7b",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-db8627695e",
+    "category": "trading_signals",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Binding swap quote with a deposit address; the payment buys the quote, the swap itself is a trade."
+  },
+  {
+    "carrierId": "bazaar-6b1f869566",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7b740f3487",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "education",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c9553cc32f",
+    "category": "trading_signals",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c69d055c21",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5bb2a89ec4",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-383c6b5995",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0d77069744",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-149a26ca4f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-119527fad4",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7a20a7b42a",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-77c8d02fab",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f737ea3097",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-64b17db509",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7792766099",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-28d95faa8a",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Yield data about staking products, not a deposit."
+  },
+  {
+    "carrierId": "bazaar-ac52f0b9a5",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ce70d5c2da",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-d906bb5e91",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a05276932f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cdfc420fcb",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ba21d2399a",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Yield data about DeFi pools, not a deposit."
+  },
+  {
+    "carrierId": "bazaar-793ef7af20",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fa3f25af34",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5e5255da78",
+    "category": "trading_signals",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-33aedc2a61",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-667756adc0",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ff8e16d27f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2a9899546d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-c274aef400",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "General US news events, not specifically financial; closest category."
+  },
+  {
+    "carrierId": "bazaar-81f9948fe5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1c1f12e80f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-611b9b0532",
+    "category": "gambling",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "gambling",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Sports betting arbitrage scanner."
+  },
+  {
+    "carrierId": "bazaar-175ca045b8",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7de9f104c0",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-68aa8af5df",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-69c0f8f9dd",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a5e7606ee3",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f7a9f92659",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fcd962b73b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fd75570986",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fdf8f331d7",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e6493cc6ed",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0988c3ff29",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6ad4b38353",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-58c83872d6",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-55cdd5a831",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-9cc6c35a0f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f1cfa10dc6",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e4e1343f73",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2b9f73ce41",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e578cca0f9",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0174a0ae78",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f1569f9cec",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-17441eca0f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-61487d8dd8",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-6fd00d0449",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0cf25d938f",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-87ef61ea5d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-632ba89060",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-3331d91399",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-885b271ccf",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-95c091aab8",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1d27f220b4",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f528bd27c2",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-37cf0950c3",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-344cc2c3c5",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "yes"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Wallet dossier with identity signals: may describe an identifiable person."
+  },
+  {
+    "carrierId": "bazaar-67f176d26d",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-69b9c9662e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "unknown",
+      "deliverable_kind": "learning_content",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "unknown",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ddbe4c290f",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "messaging",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-99a1269fc0",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "unknown",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ca08e2a806",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-380ac8b0a7",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "yes"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Scraped tweets carry public user handles."
+  },
+  {
+    "carrierId": "bazaar-92a86d14bc",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-8c15c0ffe7",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-9d9e587fe5",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-d0c0259ea1",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-5beee3e277",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-9a5a1817d5",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-9599b046fd",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0dc76e6ab4",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-502ab1b278",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-91864277ec",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-87c79eab18",
+    "category": "trading_signals",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Ranked long opportunities from an advice system: a trading signal."
+  },
+  {
+    "carrierId": "bazaar-d493e7593b",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-fc8ee4beda",
+    "category": "financial_news",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-af5ad2a264",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-3544d46874",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-09b73bcebf",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-a3c8cd3fca",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-413c796009",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0cc6cf7c0b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-256f6fd1dc",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7b138c761b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cd1361d013",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "analytics",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e32c1bd102",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2d78831898",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-0901d7c95c",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1f649a803f",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7df1f68c8b",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-2d598de06b",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "search",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-35cd455c1d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-27fde2fb9f",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-579f874021",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-b7ffd2239e",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-52847154f1",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-bd9834eaaa",
+    "category": "other",
+    "extraction": {
+      "offer_type": "one_time_product",
+      "product_function": "education",
+      "deliverable_kind": "learning_content",
+      "billing_basis": "one_time_purchase",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-d5a0ab3320",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cc6041dd16",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-ae0a0dad6f",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-cbc515265d",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7d79e5c5fb",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "education",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-619f80d287",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Exchange comparison for investing agents; data, not an investment."
+  },
+  {
+    "carrierId": "bazaar-197a85111c",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-7aa0aa3205",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1244e670e7",
+    "category": "ai_inference",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "ai_ml",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-40f2e803c6",
+    "category": "web_search",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-1d685f3ee9",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-f758edd7c3",
+    "category": "crypto_data",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "payments_finance",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-41cf552cb0",
+    "category": "weather",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "data_feeds",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)",
+    "notes": "Radon is indoor air quality; closest to weather/air-quality data."
+  },
+  {
+    "carrierId": "bazaar-41193ab5bd",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "service_access",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  },
+  {
+    "carrierId": "bazaar-e4660d9046",
+    "category": "other",
+    "extraction": {
+      "offer_type": "usage_credits",
+      "product_function": "developer_tools",
+      "deliverable_kind": "data_delivery",
+      "billing_basis": "prepaid_usage",
+      "counterparty_type": "company",
+      "contains_personal_data": "no"
+    },
+    "author": "draft:claude (check with eval:label --review)"
+  }
+]
