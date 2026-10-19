@@ -3,6 +3,8 @@
 // npm run eval -- --all --split test --final             (once, at the end; ships its Jev cache)
 //   --variant a,b    Jev variants from src/domain/jev/variants.ts (default: all of them)
 //   --offline        answer only from the cache (no Jev key needed, no spend)
+//   --bedrock id     answer Jev's questions with a Bedrock model instead of Jev, for comparison
+//                    (AWS_PROFILE=hackathon after aws sso login; see eval/README.md)
 //   --limit N        first N cases per suite (smoke runs)
 //   --concurrency N  parallel cases (default 8)
 //   --thresholds f   JSON Thresholds instead of the variant's own (one variant only)
@@ -25,6 +27,7 @@ import {
   type JevVariantId,
 } from '../../src/domain/jev/variants';
 import { EvalCaseSchema, SplitSchema, SuiteSchema, type EvalCase } from '../cases';
+import { BEDROCK_PRICES, createBedrockFetch } from '../bedrock';
 import { createCachedFetch, questionsHash } from '../jev-cache';
 import { readJsonl, writeJson } from '../jsonl';
 import { percentile } from '../metrics';
@@ -72,17 +75,30 @@ for (const id of snapshotName ? variantIds : []) {
 }
 
 const offline = args.has('offline');
-const config = offline ? undefined : loadConfig();
-if (!offline && !config?.jev) fail('JEV_API_KEY is not set (or use --offline).');
-const jevConfig = config?.jev ?? {
-  url: 'https://offline.invalid',
-  apiKey: 'offline',
-  model: process.env.JEV_MODEL || 'jev-1.13.0',
-  timeoutMs: 10_000,
+const bedrockModel = args.get('bedrock');
+const config = offline || bedrockModel ? undefined : loadConfig();
+if (!offline && !bedrockModel && !config?.jev) fail('JEV_API_KEY is not set (or use --offline).');
+const bedrockConfig = bedrockModel && {
+  url: 'https://bedrock.invalid',
+  apiKey: 'bedrock',
+  model: bedrockModel,
+  // A general LLM answering every question in one call is much slower than Jev.
+  timeoutMs: 180_000,
 };
+const jevConfig = bedrockConfig ||
+  config?.jev || {
+    url: 'https://offline.invalid',
+    apiKey: 'offline',
+    model: process.env.JEV_MODEL || 'jev-1.13.0',
+    timeoutMs: 10_000,
+  };
 
 const cacheFile = args.get('cache') ?? join(PATHS.cache, 'jev.jsonl');
-const cache = createCachedFetch({ file: cacheFile, offline });
+const cache = createCachedFetch({
+  file: cacheFile,
+  offline,
+  fetch: bedrockModel ? createBedrockFetch() : undefined,
+});
 
 const limit = args.get('limit') ? Number(args.get('limit')) : Infinity;
 const cases: EvalCase[] = suites.flatMap((suite) =>
@@ -101,11 +117,17 @@ const hashes = (q: JevQuestionSets) => ({
 interface Pass {
   questions: JevQuestionSets;
   records: CaseRecord[];
-  stats: { calls: number; newCalls: number; inputTokens: number; latencies: number[] };
+  stats: {
+    calls: number;
+    newCalls: number;
+    inputTokens: number;
+    outputTokens: number;
+    latencies: number[];
+  };
 }
 const passes = new Map<string, Pass>();
 console.log(
-  `${cases.length} ${split} cases · ${suites.join(', ')} · Jev ${jevConfig.model} · variants ${variantIds.join(', ')}`,
+  `${cases.length} ${split} cases · ${suites.join(', ')} · ${bedrockModel ? 'Bedrock' : 'Jev'} ${jevConfig.model} · variants ${variantIds.join(', ')}`,
 );
 for (const id of variantIds) {
   const questions = JEV_VARIANTS[id].questions;
@@ -138,6 +160,11 @@ for (const id of variantIds) {
           sum + ((e.response as { usage?: { input_tokens?: number } }).usage?.input_tokens ?? 0),
         0,
       ),
+      outputTokens: used.reduce(
+        (sum, e) =>
+          sum + ((e.response as { usage?: { output_tokens?: number } }).usage?.output_tokens ?? 0),
+        0,
+      ),
       latencies: used.map((e) => e.latencyMs),
     },
   });
@@ -150,12 +177,24 @@ const casesManifest = JSON.parse(
   readFileSync(join(PATHS.cases, 'manifest.json'), 'utf8'),
 ) as unknown;
 
+/** Jev bills input only; Bedrock Claude bills both; other Bedrock models report tokens only. */
+const bedrockPrice = bedrockModel ? BEDROCK_PRICES[bedrockModel] : undefined;
+const costOf = (stats: { inputTokens: number; outputTokens: number }): number | null =>
+  bedrockModel
+    ? bedrockPrice
+      ? +(
+          (stats.inputTokens * bedrockPrice.input + stats.outputTokens * bedrockPrice.output) /
+          1e6
+        ).toFixed(4)
+      : null
+    : +((stats.inputTokens / 1e6) * PRICE_PER_M_INPUT).toFixed(4);
+
 const results: VariantResult[] = [];
 for (const variantId of variantIds) {
   const variant = JEV_VARIANTS[variantId];
   const pass = passes.get(JSON.stringify(hashes(variant.questions)))!;
   const thresholds = thresholdsOf(variantId);
-  const costUsd = +((pass.stats.inputTokens / 1e6) * PRICE_PER_M_INPUT).toFixed(4);
+  const costUsd = costOf(pass.stats);
   const manifest = {
     runId: id,
     variant: variantId,
@@ -166,11 +205,13 @@ for (const variantId of variantIds) {
     cases: cases.length,
     git: gitState(),
     jev: {
+      provider: bedrockModel ? 'bedrock' : 'jev',
       model: jevConfig.model,
       ...hashes(variant.questions),
       calls: pass.stats.calls,
       newCalls: pass.stats.newCalls,
       inputTokens: pass.stats.inputTokens,
+      outputTokens: pass.stats.outputTokens,
       costUsd,
       latencyMsPerCall: {
         p50: percentile(pass.stats.latencies, 50),
@@ -203,7 +244,7 @@ for (const variantId of variantIds) {
     summary,
     jev: {
       newCalls: pass.stats.newCalls,
-      costUsd,
+      costUsd: costUsd ?? 0, // unknown price (non-Claude Bedrock model): see tokens in the manifest
       p95: percentile(pass.stats.latencies, 95),
     },
   });

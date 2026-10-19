@@ -167,6 +167,32 @@ hashes, thresholds, source hashes), the summary, the report and every Jev answer
 shows what changed in the setup, each metric before/after with "better"/"worse", and the cases
 that got fixed or broke. Snapshots are dev only; `--force` replaces one.
 
+## Jev vs. general LLMs on Bedrock
+
+`--bedrock <model id>` answers the same Screen and Judge questions with a Bedrock model instead of
+Jev (`eval/bedrock.ts`). It speaks Jev's wire protocol, so cases, cache, predictions, thresholds and
+reports are identical; only the answering model changes. The model states a probability for every
+option (Bedrock exposes no token probabilities), so tune thresholds per model on dev before
+comparing.
+
+```bash
+aws configure sso                     # once: session "hackathon", SSO region eu-north-1,
+                                      # client region eu-central-1 (see the AWS participant guide)
+aws sso login --profile hackathon     # every 12 hours
+export AWS_PROFILE=hackathon
+
+npm run eval -- --suite screen-benign,screen-injection --split dev --limit 20 \
+  --bedrock qwen.qwen3-32b-v1:0 --name qwen3-32b
+npm run eval -- --all --split dev --bedrock eu.anthropic.claude-sonnet-4-5-20250929-v1:0 \
+  --concurrency 4 --name sonnet-4-5
+npm run eval:compare -- baseline sonnet-4-5
+```
+
+- Claude needs the `eu.` prefix and shares 50 requests/min across the team (25 on Opus): keep
+  `--concurrency` low. Qwen, gpt-oss, GLM and Nova have far higher limits for bulk runs.
+- Claude 5 models are not available in the hackathon accounts; use the 4.5 family.
+- The manifest records `provider`, input and output tokens, and USD cost for the Claude models.
+
 ## Rules that keep the numbers defensible
 
 - **Test is locked.** The runner refuses `--split test` without `--final`; run it once. Tune only
