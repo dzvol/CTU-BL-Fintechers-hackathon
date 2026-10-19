@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { c, HONEST_JUDGE, HONEST_SCREEN } from '../../../test/fake-jev';
 import type { JudgeAnswers } from '../jev/judge-questions';
 import type { ScreenAnswers } from '../jev/screen-questions';
-import { decide, requiredSupport } from './decide';
+import { decide, DEFAULT_THRESHOLDS, requiredSupport, type Thresholds } from './decide';
 
 const ok = { ok: true } as const;
 const CENT = 10_000n; // 0.01 USDC
@@ -158,5 +158,60 @@ describe('decision table', () => {
     expect(run({ instruction_override: 0.97, targets_approval: 0.9 }).detail).toBe(
       'Screen flagged instruction_override 0.97, targets_approval 0.90',
     );
+  });
+
+  describe('variant rules', () => {
+    const withRules = (rules: Thresholds['rules']): Thresholds => ({
+      ...DEFAULT_THRESHOLDS,
+      rules,
+    });
+    const runWith = (t: Thresholds, screen: Partial<ScreenAnswers> = {}, judge = {}) =>
+      decide(
+        {
+          policy: ok,
+          amount: CENT,
+          screen: { ...HONEST_SCREEN, ...screen },
+          judge: { ...HONEST_JUDGE, ...judge },
+        },
+        t,
+      );
+
+    it('keeps the production behaviour when a saved threshold set has no rules', () => {
+      const { rules: _, ...older } = { ...DEFAULT_THRESHOLDS, rules: {} };
+      expect(runWith(older, { deliverable_stated: 0.2 })).toMatchObject({ verdict: 'REVIEW' });
+    });
+
+    it('reviews a missing deliverable by the yes/no question, by the extracted kind, or never', () => {
+      const vague = { deliverable_stated: 0.2, deliverable_kind: c('data_delivery', 0.9) };
+      const nothing = { deliverable_stated: 0.2, deliverable_kind: c('nothing_concrete', 0.9) };
+      expect(runWith(withRules({ deliverable: 'stated' }), vague).verdict).toBe('REVIEW');
+      expect(runWith(withRules({ deliverable: 'kind' }), vague).verdict).toBe('ALLOW');
+      expect(runWith(withRules({ deliverable: 'kind' }), nothing).verdict).toBe('REVIEW');
+      expect(runWith(withRules({ deliverable: 'off' }), nothing).verdict).toBe('ALLOW');
+    });
+
+    it('reviews unclear merchant texts only when the variant asks for it', () => {
+      const unclear = { purpose_consistency: c('cannot_tell', 0.8) };
+      expect(runWith(DEFAULT_THRESHOLDS, unclear).verdict).toBe('ALLOW');
+      expect(runWith(withRules({ reviewUnclearConsistency: true }), unclear)).toMatchObject({
+        verdict: 'REVIEW',
+        reason: 'suspicious_offer',
+      });
+    });
+
+    it("acts on Judge's topic_fit only when the variant asks it to", () => {
+      const other = { topic_fit: c('different_subject', 0.9) };
+      expect(runWith(DEFAULT_THRESHOLDS, {}, other).verdict).toBe('ALLOW');
+      expect(runWith(withRules({ topicMismatch: 'block' }), {}, other)).toMatchObject({
+        verdict: 'BLOCK',
+        reason: 'off_intent',
+      });
+      expect(runWith(withRules({ topicMismatch: 'review' }), {}, other)).toMatchObject({
+        verdict: 'REVIEW',
+        reason: 'unclear_fit',
+      });
+      const same = { topic_fit: c('same_subject', 0.9) };
+      expect(runWith(withRules({ topicMismatch: 'block' }), {}, same).verdict).toBe('ALLOW');
+    });
   });
 });

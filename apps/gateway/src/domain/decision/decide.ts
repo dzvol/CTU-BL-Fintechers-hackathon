@@ -27,6 +27,31 @@ const APPROVING = {
   task_relation: ['needed', 'supports'],
 } as const;
 
+/**
+ * Rules a Jev variant may switch. The defaults are the production behaviour since the first
+ * version; a variant changes them on purpose and the evaluation shows what that costs.
+ */
+export interface DecisionRules {
+  /**
+   * When "the merchant does not say what you get" asks for a REVIEW: Screen's yes/no question
+   * below `deliverableBelow` ('stated'), only when the extracted deliverable is
+   * `nothing_concrete` ('kind'), or never ('off').
+   */
+  deliverable: 'stated' | 'kind' | 'off';
+  deliverableBelow: number;
+  /** Also REVIEW when Screen cannot tell whether the merchant's texts agree. */
+  reviewUnclearConsistency: boolean;
+  /** What Judge's `topic_fit` = different_subject does (only variants that ask topic_fit). */
+  topicMismatch: 'block' | 'review' | 'ignore';
+}
+
+export const DEFAULT_RULES: DecisionRules = {
+  deliverable: 'stated',
+  deliverableBelow: YES,
+  reviewUnclearConsistency: false,
+  topicMismatch: 'ignore',
+};
+
 /** Every tunable cut-off of the decision table, so the offline evaluation can tune them. */
 export interface Thresholds {
   /** A noul answer at or above this counts as "yes". */
@@ -37,6 +62,8 @@ export interface Thresholds {
   severe: number;
   /** Probability Judge must give the approving options, by amount (USDC atomic units). */
   support: { upTo10Cents: number; upTo1Usdc: number; above: number };
+  /** Missing fields fall back to DEFAULT_RULES (older saved thresholds have none). */
+  rules?: Partial<DecisionRules>;
 }
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
@@ -58,7 +85,7 @@ export function requiredSupport(amount: bigint, thresholds = DEFAULT_THRESHOLDS)
 
 /** Screen's yes/no questions. */
 type ScreenFlag = {
-  [K in keyof ScreenAnswers]: ScreenAnswers[K] extends number ? K : never;
+  [K in keyof ScreenAnswers]-?: ScreenAnswers[K] extends number ? K : never;
 }[keyof ScreenAnswers];
 
 const MANIPULATION = ['instruction_override', 'targets_approval', 'authority_claim'] as const;
@@ -79,6 +106,7 @@ export function decide(
   thresholds: Thresholds = DEFAULT_THRESHOLDS,
 ): Decision {
   const { policy, amount, screen, judge } = input;
+  const rules: DecisionRules = { ...DEFAULT_RULES, ...thresholds.rules };
   const result = (verdict: Verdict, reason: VerdictReason, detail: string) => ({
     verdict,
     reason,
@@ -108,6 +136,10 @@ export function decide(
   if (judge.task_relation.choice === 'unrelated') {
     return block('off_intent', 'Judge: unrelated to the task');
   }
+  const otherSubject = judge.topic_fit?.choice === 'different_subject';
+  if (otherSubject && rules.topicMismatch === 'block') {
+    return block('off_intent', 'Judge: the offer is about a different subject than the task');
+  }
 
   // REVIEW
   const otherRecipient = flagged(OTHER_RECIPIENT);
@@ -133,8 +165,18 @@ export function decide(
   if (screen.purpose_consistency.choice === 'contradictory') {
     return review('suspicious_offer', 'Screen: the merchant texts contradict each other');
   }
-  if (screen.deliverable_stated < thresholds.yes) {
+  if (rules.reviewUnclearConsistency && screen.purpose_consistency.choice === 'cannot_tell') {
+    return review('suspicious_offer', 'Screen: cannot tell whether the merchant texts agree');
+  }
+  const noDeliverable =
+    rules.deliverable === 'stated'
+      ? screen.deliverable_stated < rules.deliverableBelow
+      : rules.deliverable === 'kind' && screen.deliverable_kind.choice === 'nothing_concrete';
+  if (noDeliverable) {
     return review('suspicious_offer', 'Screen: the merchant does not say what you get');
+  }
+  if (otherSubject && rules.topicMismatch === 'review') {
+    return review('unclear_fit', 'Judge: the offer may be about a different subject');
   }
   if (judge.severity >= thresholds.severe) {
     return review('suspicious_offer', `Judge: severity ${judge.severity.toFixed(1)} of 3`);

@@ -1,4 +1,4 @@
-import type { Answers, Questions } from './questions';
+import type { AnswerOf, Answers, Questions } from './questions';
 
 /** Judge (Jev 2) questions over the mandate, task, code-computed facts and Screen's choices. */
 export const JUDGE_QUESTIONS = {
@@ -73,4 +73,26 @@ export const JUDGE_QUESTIONS = {
   },
 } as const satisfies Questions;
 
-export type JudgeAnswers = Answers<typeof JUDGE_QUESTIONS>;
+/** Does the offer's subject (Screen's `subject_area`) match what the task is about? (questions-v2) */
+export const TOPIC_FIT = {
+  type: 'choice',
+  instructions:
+    'Is `offer_as_extracted_from_merchant_text.subject_area` the subject that `task` is about?',
+  criteria: {
+    same_subject: 'The task is about this subject',
+    adjacent_subject: 'A neighbouring subject whose data directly helps the task',
+    different_subject: 'The task is not about this subject',
+    cannot_tell: 'The subject area is unknown or missing',
+  },
+} as const;
+
+/** questions-v2: v1 plus `topic_fit`. */
+export const JUDGE_QUESTIONS_V2 = {
+  ...JUDGE_QUESTIONS,
+  topic_fit: TOPIC_FIT,
+} as const satisfies Questions;
+
+/** v1 answers; `topic_fit` only when the variant asks it. */
+export type JudgeAnswers = Answers<typeof JUDGE_QUESTIONS> & {
+  topic_fit?: AnswerOf<typeof TOPIC_FIT>;
+};

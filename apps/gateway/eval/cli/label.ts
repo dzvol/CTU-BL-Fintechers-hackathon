@@ -1,9 +1,13 @@
-// Labeling Bazaar offers for the Judge suite. People fill a worksheet; this script only prepares,
-// merges and compares it. It never fills a label itself.
+// Labeling Bazaar offers for the Judge suite. People fill or check a worksheet; this script only
+// prepares, merges and compares it. It never fills a label itself.
 //
 //   npm run eval:label -- --count 200        worksheet with offers not labeled yet
-//   npm run eval:label -- --merge            move complete entries into fixtures/bazaar-labels.json
-//   npm run eval:label -- --agreement <file> Cohen's kappa against a second person's worksheet
+//   npm run eval:label -- --review           worksheet of the labels still marked draft:…, to check
+//   npm run eval:label -- --merge            move complete rows into fixtures/bazaar-labels.json;
+//                                            a person's row replaces a draft of the same offer
+//   npm run eval:label -- --blind 50         blank worksheet of 50 labeled offers for a second
+//                                            person, who must not see the existing labels
+//   npm run eval:label -- --agreement <file> Cohen's kappa against that second person's worksheet
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -19,6 +23,8 @@ import { fail, parseArgs } from './args';
 const args = parseArgs();
 const TODO = join(PATHS.labeling, 'bazaar-todo.json');
 const FIXTURE = join(PATHS.fixtures, 'bazaar-labels.json');
+const BLIND = join(PATHS.labeling, 'bazaar-blind.json');
+const isDraft = (author: string) => /draft:/i.test(author);
 
 const EXTRACTION_FIELDS = [
   'offer_type',
@@ -32,9 +38,10 @@ if (args.has('merge')) {
   if (!existsSync(TODO)) fail(`No worksheet at ${TODO}`);
   const rows = JSON.parse(readFileSync(TODO, 'utf8')) as Record<string, unknown>[];
   const existing = loadBazaarLabels();
-  const known = new Set(existing.map((l) => l.carrierId));
-  const merged = [...existing];
+  const merged = new Map(existing.map((l) => [l.carrierId, l]));
   const incomplete: string[] = [];
+  let added = 0;
+  let replaced = 0;
   for (const row of rows) {
     const parsed = BazaarLabelSchema.safeParse({
       carrierId: row.carrierId,
@@ -47,11 +54,64 @@ if (args.has('merge')) {
       incomplete.push(String(row.carrierId));
       continue;
     }
-    if (!known.has(parsed.data.carrierId)) merged.push(parsed.data);
+    const before = merged.get(parsed.data.carrierId);
+    if (!before) {
+      merged.set(parsed.data.carrierId, parsed.data);
+      added++;
+    } else if (isDraft(before.author) && !isDraft(parsed.data.author)) {
+      // A person checked the draft: their label wins, whether they changed it or not.
+      merged.set(parsed.data.carrierId, parsed.data);
+      replaced++;
+    }
   }
-  writeJson(FIXTURE, merged);
-  console.log(`${merged.length - existing.length} merged, ${merged.length} labeled in total.`);
+  const all = [...merged.values()];
+  writeJson(FIXTURE, all);
+  const drafts = all.filter((l) => isDraft(l.author)).length;
+  console.log(
+    `${added} added, ${replaced} drafts replaced by a person's label; ${all.length} labeled, ${drafts} still drafts.`,
+  );
   if (incomplete.length) console.log(`${incomplete.length} incomplete rows left in the worksheet.`);
+} else if (args.has('review')) {
+  const drafts = loadBazaarLabels().filter((l) => isDraft(l.author));
+  const carriers = new Map(bazaarCarriers().map((c) => [c.id, c]));
+  writeJson(
+    TODO,
+    drafts.map((l) => {
+      const c = carriers.get(l.carrierId);
+      return {
+        carrierId: l.carrierId,
+        serviceName: c?.serviceName ?? null,
+        url: c?.url,
+        description: c?.description,
+        category: l.category,
+        extraction: l.extraction,
+        // Put your name here once you checked (and fixed) the row; then run --merge.
+        author: l.author,
+        notes: l.notes ?? '',
+      };
+    }),
+  );
+  console.log(`${drafts.length} draft labels to check in ${TODO}`);
+} else if (args.get('blind')) {
+  const labeled = loadBazaarLabels();
+  const carriers = new Map(bazaarCarriers().map((c) => [c.id, c]));
+  const sample = seededRandom('blind').sample(labeled, Number(args.get('blind')));
+  writeJson(
+    BLIND,
+    sample.map((l) => {
+      const c = carriers.get(l.carrierId);
+      return {
+        carrierId: l.carrierId,
+        serviceName: c?.serviceName ?? null,
+        url: c?.url,
+        description: c?.description,
+        category: '',
+        author: '',
+      };
+    }),
+  );
+  console.log(`${sample.length} offers for a second person in ${BLIND}`);
+  console.log(`Then: npm run eval:label -- --agreement ${BLIND}`);
 } else if (args.get('agreement')) {
   const other = z
     .array(z.object({ carrierId: z.string(), category: z.string() }))

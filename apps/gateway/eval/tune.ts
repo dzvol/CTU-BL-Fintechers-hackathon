@@ -59,8 +59,14 @@ const range = (from: number, to: number, step: number) =>
     (_, i) => +(from + i * step).toFixed(3),
   );
 
-/** Grid search; the higher support tiers move with the lowest one to keep the grid small. */
-export function tune(records: readonly CaseRecord[]): { best: Thresholds; tally: Tally }[] {
+/**
+ * Grid search around `base` (a variant's settings; its rules stay as they are); the higher
+ * support tiers move with the lowest one to keep the grid small.
+ */
+export function tune(
+  records: readonly CaseRecord[],
+  base: Thresholds = DEFAULT_THRESHOLDS,
+): { best: Thresholds; tally: Tally }[] {
   const results: { best: Thresholds; tally: Tally }[] = [];
   for (const yes of range(0.1, 0.7, 0.05))
     for (const injection of range(Math.max(yes, 0.5), 0.98, 0.02))
@@ -75,6 +81,7 @@ export function tune(records: readonly CaseRecord[]): { best: Thresholds; tally:
               upTo1Usdc: Math.min(0.95, +(cents + 0.15).toFixed(3)),
               above: Math.min(0.98, +(cents + 0.3).toFixed(3)),
             },
+            ...(base.rules && { rules: base.rules }),
           };
           results.push({ best: t, tally: tally(records, t) });
         }
@@ -82,15 +89,15 @@ export function tune(records: readonly CaseRecord[]): { best: Thresholds; tally:
     (a, b) =>
       a.tally.cost - b.tally.cost ||
       // Ties: prefer the configuration closest to the current one (fewest surprises).
-      distance(a.best) - distance(b.best),
+      distance(a.best, base) - distance(b.best, base),
   );
 }
 
-const distance = (t: Thresholds) =>
-  Math.abs(t.yes - DEFAULT_THRESHOLDS.yes) +
-  Math.abs(t.injection - DEFAULT_THRESHOLDS.injection) +
-  Math.abs(t.severe - DEFAULT_THRESHOLDS.severe) / 3 +
-  Math.abs(t.support.upTo10Cents - DEFAULT_THRESHOLDS.support.upTo10Cents);
+const distance = (t: Thresholds, base: Thresholds) =>
+  Math.abs(t.yes - base.yes) +
+  Math.abs(t.injection - base.injection) +
+  Math.abs(t.severe - base.severe) / 3 +
+  Math.abs(t.support.upTo10Cents - base.support.upTo10Cents);
 
 /** What each Screen yes/no question adds: the tally when it is forced to "no". */
 export function ablateQuestions(records: readonly CaseRecord[], t: Thresholds) {

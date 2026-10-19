@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { JUDGE_QUESTIONS, type JudgeAnswers } from '../../domain/jev/judge-questions';
-import type { Answers, Question, Questions } from '../../domain/jev/questions';
-import { SCREEN_QUESTIONS, type ScreenAnswers } from '../../domain/jev/screen-questions';
+import type { JudgeAnswers } from '../../domain/jev/judge-questions';
+import type { Question, Questions } from '../../domain/jev/questions';
+import type { ScreenAnswers } from '../../domain/jev/screen-questions';
 import type { JudgeState, ScreenState } from '../../domain/jev/state';
+import { QUESTIONS_V1, type JevQuestionSets } from '../../domain/jev/variants';
 
 /**
  * Semantic checks. Screen sees only untrusted merchant text; Judge never does.
@@ -64,17 +65,23 @@ function responseSchema<Qs extends Questions>(questions: Qs) {
   return z.object({ model: z.string(), answers: z.object(answers) });
 }
 
-const SCREEN_RESPONSE = responseSchema(SCREEN_QUESTIONS);
-const JUDGE_RESPONSE = responseSchema(JUDGE_QUESTIONS);
-
-/** Jev over HTTP (TypeSafe `POST /v1/systemone`). One request per Screen and per Judge. */
-export function createHttpJevClient(config: JevConfig, fetchFn: typeof fetch = fetch): JevClient {
+/**
+ * Jev over HTTP (TypeSafe `POST /v1/systemone`). One request per Screen and per Judge, asking the
+ * variant's questions; every one of them must come back with its own type and option keys.
+ */
+export function createHttpJevClient(
+  config: JevConfig,
+  fetchFn: typeof fetch = fetch,
+  questions: JevQuestionSets = QUESTIONS_V1,
+): JevClient {
   const endpoint = new URL('/v1/systemone', config.url);
+  const screenResponse = responseSchema(questions.screen);
+  const judgeResponse = responseSchema(questions.judge);
 
   async function ask(
     state: ScreenState | JudgeState,
     questions: Questions,
-    schema: typeof SCREEN_RESPONSE | typeof JUDGE_RESPONSE,
+    schema: typeof screenResponse | typeof judgeResponse,
   ): Promise<unknown> {
     const res = await fetchFn(endpoint, {
       method: 'POST',
@@ -93,10 +100,8 @@ export function createHttpJevClient(config: JevConfig, fetchFn: typeof fetch = f
   }
 
   return {
-    screen: async (state) =>
-      (await ask(state, SCREEN_QUESTIONS, SCREEN_RESPONSE)) as Answers<typeof SCREEN_QUESTIONS>,
-    judge: async (state) =>
-      (await ask(state, JUDGE_QUESTIONS, JUDGE_RESPONSE)) as Answers<typeof JUDGE_QUESTIONS>,
+    screen: async (state) => (await ask(state, questions.screen, screenResponse)) as ScreenAnswers,
+    judge: async (state) => (await ask(state, questions.judge, judgeResponse)) as JudgeAnswers,
   };
 }
 

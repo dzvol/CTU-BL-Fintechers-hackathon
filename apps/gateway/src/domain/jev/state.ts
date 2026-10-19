@@ -17,6 +17,8 @@ export interface ExtractedOffer {
   billing_basis: ScreenAnswers['billing_basis']['choice'];
   counterparty_type: ScreenAnswers['counterparty_type']['choice'];
   contains_personal_data: 'yes' | 'no';
+  /** Only when the variant's Screen asks `subject_area`. */
+  subject_area?: NonNullable<ScreenAnswers['subject_area']>['choice'];
 }
 
 /** Judge state. Built only from the approved intent, code-computed facts and Screen's choices. */
@@ -65,6 +67,7 @@ export function toJudgeState(input: {
       billing_basis: screen.billing_basis.choice,
       counterparty_type: screen.counterparty_type.choice,
       contains_personal_data: screen.contains_personal_data >= YES ? 'yes' : 'no',
+      ...(screen.subject_area && { subject_area: screen.subject_area.choice }),
     },
   };
 }

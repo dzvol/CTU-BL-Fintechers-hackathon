@@ -1,22 +1,25 @@
-// npm run eval:tune -- <dev run dir>
-// Grid-searches the decision thresholds on recorded dev answers and shows what each Screen
-// question contributes. Refuses test records: tuning on the test split would void its results.
-import { readFileSync } from 'node:fs';
+// npm run eval:tune -- <dev run dir or snapshot>
+// Grid-searches the decision thresholds on recorded dev answers, around the settings the run was
+// made with (a variant's rules stay), and shows what each Screen question contributes. Refuses
+// test records: tuning on the test split would void its results.
 import { join } from 'node:path';
 import { DEFAULT_THRESHOLDS } from '../../src/domain/decision/decide';
 import { writeJson } from '../jsonl';
-import type { CaseRecord } from '../runner';
+import { loadSnapshot } from '../snapshots';
 import { ablateQuestions, COSTS, tally, tune } from '../tune';
 import { fail, parseArgs } from './args';
 
 const args = parseArgs();
-const dir = args.positional[0] ?? fail('Usage: npm run eval:tune -- <dev run dir>');
-const records = JSON.parse(readFileSync(join(dir, 'records.json'), 'utf8')) as CaseRecord[];
+const run = loadSnapshot(
+  args.positional[0] ?? fail('Usage: npm run eval:tune -- <dev run dir or snapshot>'),
+);
+const { dir, records } = run;
+const base = run.manifest.thresholds ?? DEFAULT_THRESHOLDS;
 if (records.some((r) => r.split === 'test'))
   fail('These records include the test split; tune on dev only.');
 
-const ranked = tune(records);
-const current = tally(records, DEFAULT_THRESHOLDS);
+const ranked = tune(records, base);
+const current = tally(records, base);
 console.log(`Costs per mistake: ${JSON.stringify(COSTS)}\n`);
 console.table([
   { config: 'current', ...current },
@@ -24,7 +27,7 @@ console.table([
 ]);
 console.log('\nBest thresholds:', JSON.stringify(ranked[0]!.best, null, 2));
 console.log('\nScreen questions (forced to "no" one at a time, current thresholds):');
-const questions = ablateQuestions(records, DEFAULT_THRESHOLDS);
+const questions = ablateQuestions(records, base);
 console.table(questions);
 
 writeJson(join(dir, 'tune.json'), { costs: COSTS, current, top: ranked.slice(0, 20), questions });

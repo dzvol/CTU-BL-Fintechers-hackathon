@@ -46,7 +46,12 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
     transport:
       overrides.x402Transport ??
       createHttpX402Transport({ allowHttpLocalhost: config.x402AllowHttpLocalhost }),
-    jev: overrides.jev ?? (config.jev ? createHttpJevClient(config.jev) : createUnconfiguredJev()),
+    jev:
+      overrides.jev ??
+      (config.jev
+        ? createHttpJevClient(config.jev, fetch, config.jevVariant.questions)
+        : createUnconfiguredJev()),
+    thresholds: config.jevVariant.thresholds,
     // The Signer reads SPONSOR_PRIVATE_KEY itself; an invalid key stops the gateway here.
     signer:
       overrides.signer ??

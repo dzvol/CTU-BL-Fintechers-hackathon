@@ -4,6 +4,7 @@ import type { GoogleOAuthClient } from '../src/adapters/google-oauth/google-oaut
 import { createApp } from '../src/app';
 import { fakeMerchantTransport } from './fake-merchant';
 import type { Config } from '../src/config';
+import { JEV_VARIANTS } from '../src/domain/jev/variants';
 
 export type TestApp = ReturnType<typeof createApp>;
 
@@ -17,6 +18,7 @@ export const testConfig: Config = {
   userAllocation: 2_000_000n,
   x402AllowHttpLocalhost: false,
   jev: undefined,
+  jevVariant: JEV_VARIANTS.baseline,
   payments: { signer: undefined, chainReader: {}, poolLimit: 20_000_000n },
 };
 

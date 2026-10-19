@@ -1,6 +1,7 @@
 import type { ChainReader } from '../adapters/chain-reader';
 import type { JevClient } from '../adapters/jev/jev-client';
 import type { Signer } from '../adapters/signer';
+import type { Thresholds } from '../domain/decision/decide';
 import type { Store } from '../adapters/store';
 import type { X402PaymentRequired, X402Transport } from '../adapters/x402';
 import { defaultPolicy, type Policy } from '../domain/policy/policy';
@@ -22,6 +23,8 @@ export function createServices(deps: {
   userAllocation: bigint;
   webBaseUrl: string;
   jev: JevClient;
+  /** How the decision table reads Jev's answers (the active Jev variant). */
+  thresholds?: Thresholds;
   /** Undefined when SPONSOR_PRIVATE_KEY isn't set: payments are refused (fail closed). */
   signer: Signer | undefined;
   chainReader: ChainReader;
@@ -98,6 +101,7 @@ export function createServices(deps: {
       transport: deps.transport,
       policy: deps.policy ?? defaultPolicy,
       jev: deps.jev,
+      thresholds: deps.thresholds,
       signer: deps.signer,
       chainReader: deps.chainReader,
       poolLimit: deps.poolLimit,

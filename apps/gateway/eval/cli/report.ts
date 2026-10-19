@@ -14,7 +14,7 @@ const dir =
 const run = loadSnapshot(dir);
 const thresholds: Thresholds = args.get('thresholds')
   ? (JSON.parse(readFileSync(args.get('thresholds')!, 'utf8')) as Thresholds)
-  : DEFAULT_THRESHOLDS;
+  : (run.manifest.thresholds ?? DEFAULT_THRESHOLDS);
 
 const manifest = { ...run.manifest, thresholds, recomputedFrom: run.dir };
 const summary = summarize(run.records, thresholds);

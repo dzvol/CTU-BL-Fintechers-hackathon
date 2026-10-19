@@ -18,7 +18,10 @@
     "eval:label": "tsx eval/cli/label.ts",
     "eval:report": "tsx eval/cli/report.ts",
     "eval:tune": "tsx eval/cli/tune.ts",
-    "eval:compare": "tsx eval/cli/compare.ts"
+    "eval:compare": "tsx eval/cli/compare.ts",
+    "eval:ablation": "tsx eval/cli/ablation.ts",
+    "eval:variants": "tsx eval/cli/variants.ts",
+    "eval:stability": "tsx --env-file-if-exists=../../.env eval/cli/stability.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
