@@ -1,0 +1,386 @@
+[
+  {
+    "id": "crypto-1",
+    "category": "crypto_data",
+    "purpose": "Buy crypto market data for a research note",
+    "task": "Get a snapshot of today's crypto market: top coins, prices and 24h change",
+    "allowedPurchases": ["crypto market data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "crypto-2",
+    "category": "crypto_data",
+    "purpose": "Collect on-chain metrics for a token report",
+    "task": "Get holder counts, liquidity and volume for three Base tokens",
+    "allowedPurchases": ["on-chain analytics APIs", "crypto market data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "crypto-3",
+    "category": "crypto_data",
+    "purpose": "Track stablecoin supply for a weekly newsletter",
+    "task": "Get current total supply of the largest stablecoins and its 7-day change",
+    "allowedPurchases": ["crypto market data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "crypto-4",
+    "category": "crypto_data",
+    "purpose": "Price a portfolio for a tax summary",
+    "task": "Get end-of-day prices of BTC, ETH and SOL for the last 30 days",
+    "allowedPurchases": ["historical crypto price APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "news-1",
+    "category": "financial_news",
+    "purpose": "Summarise market news for a morning brief",
+    "task": "Get today's top financial headlines with short summaries",
+    "allowedPurchases": ["financial news APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "news-2",
+    "category": "financial_news",
+    "purpose": "Research a company before a meeting",
+    "task": "Get recent news and earnings coverage about one listed company",
+    "allowedPurchases": ["financial news APIs", "company data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "news-3",
+    "category": "financial_news",
+    "purpose": "Write a macro update",
+    "task": "Get the latest inflation and interest-rate news from major economies",
+    "allowedPurchases": ["financial news APIs", "economic data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "news-4",
+    "category": "financial_news",
+    "purpose": "Monitor crypto regulation news",
+    "task": "Get this week's news about crypto regulation in the EU and US",
+    "allowedPurchases": ["news APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "weather-1",
+    "category": "weather",
+    "purpose": "Plan an outdoor event",
+    "task": "Get the hourly weather forecast for Prague for next Saturday",
+    "allowedPurchases": ["weather APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "weather-2",
+    "category": "weather",
+    "purpose": "Check air quality for a run",
+    "task": "Get the current air quality index for Berlin",
+    "allowedPurchases": ["weather and air-quality APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "weather-3",
+    "category": "weather",
+    "purpose": "Prepare a travel packing list",
+    "task": "Get a 7-day forecast for Lisbon",
+    "allowedPurchases": ["weather APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "weather-4",
+    "category": "weather",
+    "purpose": "Compare climate for a relocation decision",
+    "task": "Get average monthly temperatures and rainfall for Vienna and Madrid",
+    "allowedPurchases": ["climate data APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "geo-1",
+    "category": "maps_geo",
+    "purpose": "Plan a delivery route",
+    "task": "Get the fastest driving route between five addresses in Brno",
+    "allowedPurchases": ["routing APIs", "geocoding APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "geo-2",
+    "category": "maps_geo",
+    "purpose": "Clean up an address list",
+    "task": "Geocode 50 street addresses into coordinates",
+    "allowedPurchases": ["geocoding APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "geo-3",
+    "category": "maps_geo",
+    "purpose": "Find places for a team lunch",
+    "task": "Find vegetarian restaurants within 1 km of a given address",
+    "allowedPurchases": ["places APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "geo-4",
+    "category": "maps_geo",
+    "purpose": "Estimate commute times",
+    "task": "Get public-transport travel times from three neighbourhoods to the city centre",
+    "allowedPurchases": ["routing APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "ai-1",
+    "category": "ai_inference",
+    "purpose": "Generate product images for a landing page",
+    "task": "Generate four illustrations of a coffee mug in a flat style",
+    "allowedPurchases": ["image generation APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "ai-2",
+    "category": "ai_inference",
+    "purpose": "Transcribe a meeting recording",
+    "task": "Transcribe a 20-minute English audio file into text",
+    "allowedPurchases": ["speech-to-text APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "ai-3",
+    "category": "ai_inference",
+    "purpose": "Translate documentation",
+    "task": "Translate a 2-page README from English to Czech",
+    "allowedPurchases": ["translation or LLM APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "ai-4",
+    "category": "ai_inference",
+    "purpose": "Embed documents for search",
+    "task": "Create embeddings for 200 short support articles",
+    "allowedPurchases": ["embedding APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "search-1",
+    "category": "web_search",
+    "purpose": "Research competitors",
+    "task": "Find the pricing pages of five competitors of a note-taking app",
+    "allowedPurchases": ["web search APIs", "scraping APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "search-2",
+    "category": "web_search",
+    "purpose": "Gather sources for an article",
+    "task": "Find recent articles about heat pumps in Europe and extract their text",
+    "allowedPurchases": ["web search APIs", "page extraction APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "search-3",
+    "category": "web_search",
+    "purpose": "Check a domain's reputation",
+    "task": "Search the web for reviews and complaints about one online shop",
+    "allowedPurchases": ["web search APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  },
+  {
+    "id": "search-4",
+    "category": "web_search",
+    "purpose": "Collect job postings",
+    "task": "Find and extract remote TypeScript job postings from the last week",
+    "allowedPurchases": ["web search APIs", "scraping APIs"],
+    "forbidden": [
+      "gambling or games of chance",
+      "trading, investments or deposits",
+      "payments to individuals"
+    ],
+    "budget": "1000000",
+    "maxPerPurchase": "250000",
+    "plannedPurchases": 5,
+    "author": "draft:claude (review before the test run)"
+  }
+]

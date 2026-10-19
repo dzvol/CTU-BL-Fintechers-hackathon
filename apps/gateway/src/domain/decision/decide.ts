@@ -27,14 +27,33 @@ const APPROVING = {
   task_relation: ['needed', 'supports'],
 } as const;
 
+/** Every tunable cut-off of the decision table, so the offline evaluation can tune them. */
+export interface Thresholds {
+  /** A noul answer at or above this counts as "yes". */
+  yes: number;
+  /** Manipulation probability that blocks outright (between `yes` and this: REVIEW). */
+  injection: number;
+  /** Judge's severity level that asks for a REVIEW. */
+  severe: number;
+  /** Probability Judge must give the approving options, by amount (USDC atomic units). */
+  support: { upTo10Cents: number; upTo1Usdc: number; above: number };
+}
+
+export const DEFAULT_THRESHOLDS: Thresholds = {
+  yes: YES,
+  injection: INJECTION,
+  severe: SEVERE,
+  support: { upTo10Cents: 0.6, upTo1Usdc: 0.75, above: 0.9 },
+};
+
 /**
  * The probability Judge must give the approving options of each question for an ALLOW; the more
  * money, the surer. Below that the user reviews the purchase.
  */
-export function requiredSupport(amount: bigint): number {
-  if (amount <= 100_000n) return 0.6; // up to 0.10 USDC
-  if (amount <= 1_000_000n) return 0.75; // up to 1 USDC
-  return 0.9;
+export function requiredSupport(amount: bigint, thresholds = DEFAULT_THRESHOLDS): number {
+  if (amount <= 100_000n) return thresholds.support.upTo10Cents;
+  if (amount <= 1_000_000n) return thresholds.support.upTo1Usdc;
+  return thresholds.support.above;
 }
 
 /** Screen's yes/no questions. */
@@ -50,12 +69,15 @@ const OTHER_RECIPIENT = ['payee_change', 'other_destination'] as const;
  * Screen and Judge are absent when Policy blocked (Jev is never called then). Order: BLOCK rules
  * first, then REVIEW rules, ALLOW only when nothing fired.
  */
-export function decide(input: {
-  policy: PolicyOutcome;
-  amount: bigint;
-  screen?: ScreenAnswers;
-  judge?: JudgeAnswers;
-}): Decision {
+export function decide(
+  input: {
+    policy: PolicyOutcome;
+    amount: bigint;
+    screen?: ScreenAnswers;
+    judge?: JudgeAnswers;
+  },
+  thresholds: Thresholds = DEFAULT_THRESHOLDS,
+): Decision {
   const { policy, amount, screen, judge } = input;
   const result = (verdict: Verdict, reason: VerdictReason, detail: string) => ({
     verdict,
@@ -69,13 +91,13 @@ export function decide(input: {
   // Fail closed: without both semantic checks there is no ALLOW.
   if (!screen || !judge) return block('jev_unavailable', 'Jev did not answer');
 
-  const flagged = (questions: readonly ScreenFlag[], threshold = YES) =>
+  const flagged = (questions: readonly ScreenFlag[], threshold = thresholds.yes) =>
     questions.filter((q) => screen[q] >= threshold);
   const listed = (questions: ScreenFlag[]) =>
     questions.map((q) => `${q} ${screen[q].toFixed(2)}`).join(', ');
 
   // BLOCK
-  const injection = flagged(MANIPULATION, INJECTION);
+  const injection = flagged(MANIPULATION, thresholds.injection);
   if (injection.length > 0) return block('prompt_injection', `Screen flagged ${listed(injection)}`);
   if (judge.mandate_rules.choice === 'forbidden') {
     return block('off_intent', 'Judge: a forbidden rule of the intent applies');
@@ -107,14 +129,14 @@ export function decide(input: {
       `Screen: billed as ${billing}, offer ${screen.offer_type.choice}`,
     );
   }
-  if (screen.urgency >= YES) return review('suspicious_offer', 'Screen flagged urgency');
+  if (screen.urgency >= thresholds.yes) return review('suspicious_offer', 'Screen flagged urgency');
   if (screen.purpose_consistency.choice === 'contradictory') {
     return review('suspicious_offer', 'Screen: the merchant texts contradict each other');
   }
-  if (screen.deliverable_stated < YES) {
+  if (screen.deliverable_stated < thresholds.yes) {
     return review('suspicious_offer', 'Screen: the merchant does not say what you get');
   }
-  if (judge.severity >= SEVERE) {
+  if (judge.severity >= thresholds.severe) {
     return review('suspicious_offer', `Judge: severity ${judge.severity.toFixed(1)} of 3`);
   }
   if (judge.scope.choice === 'far_beyond_need') {
@@ -130,7 +152,7 @@ export function decide(input: {
       const support = APPROVING[q].reduce((sum, option) => sum + (probabilities[option] ?? 0), 0);
       return { q, support };
     })
-    .filter(({ support }) => support < requiredSupport(amount));
+    .filter(({ support }) => support < requiredSupport(amount, thresholds));
   if (unclear.length > 0) {
     const what = unclear.map(({ q, support }) => `${q} ${support.toFixed(2)}`);
     return review('unclear_fit', `Judge is not sure: ${what.join(', ')}`);

@@ -10,7 +10,15 @@
     "test": "vitest run --passWithNoTests",
     "db:reset": "tsx --env-file-if-exists=../../.env src/db/reset.ts",
     "demo:agent": "tsx scripts/demo-agent.ts",
-    "jev:eval": "tsx --env-file-if-exists=../../.env scripts/jev-eval.ts"
+    "jev:eval": "tsx --env-file-if-exists=../../.env scripts/jev-eval.ts",
+    "eval": "tsx --env-file-if-exists=../../.env eval/cli/run.ts",
+    "eval:fetch": "tsx eval/cli/fetch.ts",
+    "eval:build": "tsx eval/cli/build.ts",
+    "eval:validate": "tsx eval/cli/validate.ts",
+    "eval:label": "tsx eval/cli/label.ts",
+    "eval:report": "tsx eval/cli/report.ts",
+    "eval:tune": "tsx eval/cli/tune.ts",
+    "eval:compare": "tsx eval/cli/compare.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
