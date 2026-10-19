@@ -1,0 +1,30 @@
+{
+  "name": "semanticauth",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tests/*"
+  ],
+  "scripts": {
+    "dev:gateway": "npm run dev -w @semanticauth/gateway",
+    "dev:web": "npm run dev -w @semanticauth/web",
+    "dev:merchants": "npm run dev -w @semanticauth/test-merchants",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
