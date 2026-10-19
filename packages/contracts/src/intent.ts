@@ -22,6 +22,13 @@ export const IntentProposalSchema = z.object({
 });
 export type IntentProposal = z.infer<typeof IntentProposalSchema>;
 
+/** Returned by `get_intent_template`: how to fill in an IntentProposal. */
+export const IntentTemplateSchema = z.object({
+  instructions: z.string(),
+  example: IntentProposalSchema,
+});
+export type IntentTemplate = z.infer<typeof IntentTemplateSchema>;
+
 /** Stored intent. Immutable once approved. */
 export const IntentSchema = z.object({
   id: IntentIdSchema,
