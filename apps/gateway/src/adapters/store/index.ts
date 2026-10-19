@@ -39,6 +39,7 @@ export function createStore(db: Db) {
     intents: createIntentRepository(db),
     tasks: createTaskRepository(db),
     operations: createOperationRepository(db),
+    ledger: createLedgerRepository(db),
     reviews: createReviewRepository(db),
     transaction: (<T>(fn: () => T): T => db.transaction(fn)()) as Transaction,
   };
