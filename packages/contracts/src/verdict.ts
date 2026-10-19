@@ -12,6 +12,8 @@ export const VerdictReasonSchema = z.enum([
   'jev_unavailable',
   'prompt_injection',
   'off_intent',
+  /** A pipeline step failed or isn't implemented; fail-closed, nothing was paid. */
+  'internal_error',
   // REVIEW
   'recipient_change',
   'subscription',

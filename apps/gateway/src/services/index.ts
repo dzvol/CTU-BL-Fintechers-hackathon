@@ -1,4 +1,6 @@
+import { createPassThroughJev } from '../adapters/jev/jev-client';
 import type { Store } from '../adapters/store';
+import { passThroughPolicy } from '../domain/policy/policy';
 import { createAccountService } from './account/account-service';
 import { createApiKeyService } from './account/api-key-service';
 import { createIntentService } from './intent/intent-service';
@@ -47,7 +49,15 @@ export function createServices(deps: {
     apiKeys,
     tasks,
     intents,
-    payments: createPaymentGateway(),
+    payments: createPaymentGateway({
+      operations: store.operations,
+      tasks,
+      intents,
+      transaction: store.transaction,
+      policy: passThroughPolicy,
+      jev: createPassThroughJev(),
+      now,
+    }),
     reviews: createReviewService(),
   };
 }

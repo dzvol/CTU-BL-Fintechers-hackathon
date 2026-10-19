@@ -56,6 +56,8 @@ export const OperationSchema = z.object({
   /** Absent for free content and for offers rejected by the normalizer. */
   offer: NormalizedOfferSchema.optional(),
   settlement: SettlementSchema.optional(),
+  /** Human-readable explanation of the current state. */
+  message: z.string().optional(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
