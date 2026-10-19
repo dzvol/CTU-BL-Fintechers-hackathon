@@ -1,15 +1,14 @@
-import { type Me, MeSchema } from '@semanticauth/contracts';
+import { MeSchema, type Me } from '@semanticauth/contracts';
+import { z } from 'zod';
+import { ApiError, request } from './http';
 
 export const LOGIN_URL = '/auth/google/login';
-
-/** The logged-in user, or null when there is no session. */
-export async function fetchMe(): Promise<Me | null> {
-  const res = await fetch('/api/me', { credentials: 'include' });
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`GET /api/me failed with HTTP ${res.status}`);
-  return MeSchema.parse(await res.json());
+export async function fetchMe(signal?: AbortSignal): Promise<Me | null> {
+  try {
+    return await request('/api/me', MeSchema, { signal });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
 }
-
-export async function logout(): Promise<void> {
-  await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-}
+export const logout = () => request('/auth/logout', z.undefined(), { method: 'POST' });

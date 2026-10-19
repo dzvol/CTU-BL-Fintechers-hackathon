@@ -1,0 +1,227 @@
+@import 'tailwindcss' source(none);
+@source "../src";
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-overlay: var(--overlay);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-demo: var(--demo);
+  --color-demo-soft: var(--demo-soft);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --overlay: oklch(0.12 0.015 265 / 0.65);
+  --radius: 0.5rem;
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --background: oklch(0.985 0.002 260);
+  --foreground: oklch(0.19 0.015 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 265);
+  --primary: oklch(0.49 0.25 269);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.006 265);
+  --secondary-foreground: oklch(0.25 0.02 265);
+  --muted: oklch(0.965 0.004 265);
+  --muted-foreground: oklch(0.48 0.025 265);
+  --accent: oklch(0.95 0.025 273);
+  --accent-foreground: oklch(0.35 0.15 273);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.52 0.13 155);
+  --success-soft: oklch(0.96 0.04 155);
+  --warning: oklch(0.54 0.12 70);
+  --warning-soft: oklch(0.97 0.05 85);
+  --danger-soft: oklch(0.965 0.03 27);
+  --info: oklch(0.5 0.13 245);
+  --info-soft: oklch(0.96 0.03 245);
+  --demo: oklch(0.55 0.15 50);
+  --demo-soft: oklch(0.97 0.04 70);
+  --border: oklch(0.91 0.006 265);
+  --input: oklch(0.88 0.008 265);
+  --ring: oklch(0.49 0.25 269);
+  --chart-1: oklch(0.47 0.17 273);
+  --chart-2: oklch(0.6 0.14 70);
+  --chart-3: oklch(0.52 0.13 155);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.23 0.023 260);
+  --sidebar-foreground: oklch(0.95 0.008 260);
+  --sidebar-primary: oklch(0.47 0.17 273);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.33 0.07 270);
+  --sidebar-accent-foreground: oklch(0.97 0.008 260);
+  --sidebar-border: oklch(0.32 0.02 260);
+  --sidebar-ring: oklch(0.47 0.17 273);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Document sections are unframed; only repeated items and dialogs are framed. */
+body {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+.task-document {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  column-gap: 48px;
+}
+.task-purpose {
+  grid-column: 1;
+  grid-row: 1;
+  padding-bottom: 24px;
+}
+.task-permissions {
+  grid-column: 1;
+  grid-row: 2;
+}
+.task-terms {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  background: var(--card);
+}
+.task-section {
+  border-bottom: 1px solid var(--border);
+  padding: 22px 0;
+}
+.task-section:first-child {
+  padding-top: 0;
+}
+.task-section:last-child {
+  border: 0;
+}
+.task-section h2,
+.task-purpose h2,
+.task-terms h2 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.task-section p {
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.task-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 16px 0;
+  margin-top: 24px;
+}
+@media (max-width: 767px) {
+  .task-document {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .task-purpose {
+    padding: 0;
+  }
+  .task-terms {
+    width: 100%;
+    padding: 16px;
+  }
+  .task-section {
+    padding: 16px 0;
+  }
+  .task-footer {
+    margin-inline: -20px;
+    padding: 12px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

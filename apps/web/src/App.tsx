@@ -1,96 +1,116 @@
-import { formatUsdc, type Intent, type Me, type Review, type Task } from '@semanticauth/contracts';
-import { useCallback, useEffect, useState } from 'react';
-import { fetchMe, LOGIN_URL, logout } from './api/auth';
-import { approveIntent, fetchPendingIntent, rejectIntent } from './api/intents';
-import { createApiKey } from './api/keys';
-import { approveReview, fetchPendingReviews, rejectReview } from './api/reviews';
-import { closeTask, fetchActiveTask } from './api/tasks';
+import { lazy, Suspense } from 'react';
+import { Loading } from './components/sa/common';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+  Link,
+} from '@tanstack/react-router';
+import { OwnerLayout } from './components/sa/owner-layout';
+import { Activity, FILTERS, type ActivityFilter } from './pages/activity';
+import { Faq, Contact, AdminUnavailable } from './pages/information';
+import { Toaster } from './components/ui/sonner';
+import './styles.css';
 
+const SignIn = lazy(() => import('./pages/sign-in').then((m) => ({ default: m.SignIn })));
+const Overview = lazy(() => import('./pages/overview').then((m) => ({ default: m.Overview })));
+const Tasks = lazy(() => import('./pages/tasks').then((m) => ({ default: m.Tasks })));
+const TaskDetail = lazy(() =>
+  import('./pages/task-detail').then((m) => ({ default: m.TaskDetail })),
+);
+const PurchaseDetail = lazy(() =>
+  import('./pages/purchase-detail').then((m) => ({ default: m.PurchaseDetail })),
+);
+const Connect = lazy(() => import('./pages/connect').then((m) => ({ default: m.Connect })));
+const root = createRootRoute({
+  component: () => (
+    <Suspense fallback={<Loading />}>
+      <Outlet />
+    </Suspense>
+  ),
+  notFoundComponent: () => (
+    <main className="p-8">
+      <h1 className="text-2xl font-semibold">Page not found</h1>
+      <Link to="/" className="text-primary underline">
+        Go home
+      </Link>
+    </main>
+  ),
+  errorComponent: () => (
+    <main className="p-8">
+      <h1 className="text-2xl font-semibold">This page didn't load</h1>
+      <a href="/" className="text-primary underline">
+        Return to sign in
+      </a>
+    </main>
+  ),
+});
+const signIn = createRoute({
+  getParentRoute: () => root,
+  path: '/',
+  component: SignIn,
+  validateSearch: (s: Record<string, unknown>): { expired?: boolean } =>
+    s.expired === true ? { expired: true } : {},
+});
+const owner = createRoute({ getParentRoute: () => root, id: 'owner', component: OwnerLayout });
+const overview = createRoute({
+  getParentRoute: () => owner,
+  path: '/overview',
+  component: Overview,
+});
+const tasks = createRoute({ getParentRoute: () => owner, path: '/mandates', component: Tasks });
+const task = createRoute({
+  getParentRoute: () => owner,
+  path: '/mandates/$id',
+  component: TaskDetail,
+});
+const activity = createRoute({
+  getParentRoute: () => owner,
+  path: '/activity',
+  component: Activity,
+  validateSearch: (s: Record<string, unknown>): { filter?: ActivityFilter } => ({
+    filter: FILTERS.find((f) => f.id === s.filter)?.id ?? 'all',
+  }),
+});
+const purchase = createRoute({
+  getParentRoute: () => owner,
+  path: '/activity/$id',
+  component: PurchaseDetail,
+});
+const connect = createRoute({ getParentRoute: () => owner, path: '/connect', component: Connect });
+const faq = createRoute({ getParentRoute: () => root, path: '/faq', component: Faq });
+const contact = createRoute({ getParentRoute: () => root, path: '/contact', component: Contact });
+const admin = createRoute({
+  getParentRoute: () => root,
+  path: '/admin',
+  component: AdminUnavailable,
+});
+export const router = createRouter({
+  routeTree: root.addChildren([
+    signIn,
+    faq,
+    contact,
+    admin,
+    owner.addChildren([overview, tasks, task, activity, purchase, connect]),
+  ]),
+  scrollRestoration: true,
+});
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+export const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 1000 }, mutations: { retry: false } },
+});
 export function App() {
-  // undefined = still loading, null = logged out
-  const [me, setMe] = useState<Me | null>();
-  const [newKey, setNewKey] = useState<string>();
-  const [intent, setIntent] = useState<Intent>();
-  const [task, setTask] = useState<Task>();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [error, setError] = useState<string>();
-
-  const refresh = useCallback(() => {
-    Promise.all([fetchMe(), fetchPendingIntent(), fetchActiveTask(), fetchPendingReviews()]).then(
-      ([profile, pendingIntent, activeTask, pendingReviews]) => {
-        setMe(profile);
-        setIntent(pendingIntent);
-        setTask(activeTask);
-        setReviews(pendingReviews);
-      },
-      (err: Error) => setError(err.message),
-    );
-  }, []);
-
-  useEffect(() => {
-    fetchMe().then(setMe, () => setMe(null));
-  }, []);
-
-  // Once per login; `refresh` itself replaces `me` with the current balance.
-  const signedIn = Boolean(me);
-  useEffect(() => {
-    if (signedIn) refresh();
-  }, [signedIn, refresh]);
-
-  if (me === undefined) return null;
-  if (me === null) return <a href={LOGIN_URL}>Sign in with Google</a>;
-
-  /** Runs an action, shows its error if any, then reloads balance, intent, task and reviews. */
-  const act = (action: () => Promise<unknown>) => () => {
-    setError(undefined);
-    action().then(refresh, (err: Error) => setError(err.message));
-  };
-
   return (
-    <div>
-      <p>{me.email}</p>
-      {me.balance && (
-        <p>
-          Remaining: {formatUsdc(me.balance.remaining)} of {formatUsdc(me.allocation)} USDC
-          {me.balance.remaining === '0' && ' (used up: API keys no longer work)'}
-        </p>
-      )}
-      <button
-        onClick={act(() =>
-          createApiKey(`key ${new Date().toISOString()}`).then(({ key }) => setNewKey(key)),
-        )}
-      >
-        Create API key
-      </button>
-      {newKey && <pre>{newKey}</pre>}
-
-      <button onClick={act(async () => {})}>Refresh</button>
-
-      {intent && (
-        <div>
-          <pre>{JSON.stringify(intent, null, 2)}</pre>
-          <button onClick={act(() => approveIntent(intent.id))}>Approve intent</button>
-          <button onClick={act(() => rejectIntent(intent.id))}>Reject intent</button>
-        </div>
-      )}
-
-      {task && (
-        <div>
-          <pre>{JSON.stringify(task, null, 2)}</pre>
-          <button onClick={act(() => closeTask(task.id))}>Close task</button>
-        </div>
-      )}
-
-      {reviews.map((review) => (
-        <div key={review.id}>
-          <pre>{JSON.stringify(review, null, 2)}</pre>
-          <button onClick={act(() => approveReview(review.id))}>Approve purchase</button>
-          <button onClick={act(() => rejectReview(review.id))}>Reject purchase</button>
-        </div>
-      ))}
-
-      {error && <p>{error}</p>}
-      <button onClick={() => logout().then(() => setMe(null))}>Logout</button>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" richColors />
+    </QueryClientProvider>
   );
 }

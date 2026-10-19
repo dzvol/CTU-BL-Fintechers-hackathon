@@ -1,19 +1,10 @@
-import { type Intent, IntentSchema, listResponseSchema } from '@semanticauth/contracts';
+import { IntentSchema, listResponseSchema, type IntentId } from '@semanticauth/contracts';
 import { request } from './http';
-
-/** The intent waiting for approval, if any (there is at most one). */
-export async function fetchPendingIntent(): Promise<Intent | undefined> {
-  const { items } = await request(
-    '/api/intents?status=pending_approval',
-    listResponseSchema(IntentSchema),
-  );
-  return items[0];
-}
-
-export function approveIntent(id: string): Promise<Intent> {
-  return request(`/api/intents/${id}/approve`, IntentSchema, { method: 'POST' });
-}
-
-export function rejectIntent(id: string): Promise<Intent> {
-  return request(`/api/intents/${id}/reject`, IntentSchema, { method: 'POST' });
-}
+export const fetchIntents = (signal?: AbortSignal) =>
+  request('/api/intents', listResponseSchema(IntentSchema), { signal }).then((r) => r.items);
+export const fetchIntent = (id: string, signal?: AbortSignal) =>
+  request(`/api/intents/${encodeURIComponent(id)}`, IntentSchema, { signal });
+export const approveIntent = (id: IntentId) =>
+  request(`/api/intents/${encodeURIComponent(id)}/approve`, IntentSchema, { method: 'POST' });
+export const rejectIntent = (id: IntentId) =>
+  request(`/api/intents/${encodeURIComponent(id)}/reject`, IntentSchema, { method: 'POST' });
