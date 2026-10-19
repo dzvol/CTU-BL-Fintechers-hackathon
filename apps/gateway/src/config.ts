@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { resolve } from 'node:path';
 import { parseUsdc, UsdcDecimalSchema } from '@semanticauth/contracts';
 import { z } from 'zod';
 import { loadChainReaderConfig, type ChainReaderConfig } from './adapters/chain-reader';
@@ -24,6 +25,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8787),
   WEB_BASE_URL: z.url().default('http://localhost:5173'),
   DATABASE_PATH: z.string().min(1).default(DEFAULT_DATABASE_PATH),
+  WEB_DIST_DIR: optional,
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
   GOOGLE_REDIRECT_URI: optional.pipe(z.url().optional()),
@@ -54,6 +56,11 @@ export interface GoogleConfig {
 export interface Config {
   port: number;
   webBaseUrl: string;
+  /**
+   * Built dashboard (apps/web/dist) to serve from the gateway's own origin, so the session cookie
+   * and the CSRF origin check work without a separate proxy. Undefined in dev, where Vite serves it.
+   */
+  webDistDir?: string;
   databasePath: string;
   /** Undefined when GOOGLE_* env is missing; login then answers 503 so the rest still runs. */
   google: GoogleConfig | undefined;
@@ -107,6 +114,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     port: e.PORT,
     webBaseUrl: e.WEB_BASE_URL,
+    webDistDir: e.WEB_DIST_DIR ? resolve(e.WEB_DIST_DIR) : undefined,
     databasePath: e.DATABASE_PATH,
     google,
     // Without a fixed secret, login cookies only survive until restart; fine for local dev.
