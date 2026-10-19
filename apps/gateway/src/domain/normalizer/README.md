@@ -26,7 +26,7 @@ the full JSON-RPC response, including `jsonrpc` and `result`.
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
 | `mapToolCatalog(query)`                   | MCP `tools/list` response or one Bazaar tool discovery entry                                               | One query per tool                            |
 | `mapPaymentRequired(query)`               | x402 v2 payment required, MCP payment required, Bazaar resources/search response, or MPP payment challenge | One query per resource/payment option         |
-| `mapDataReceival(query, contentType?)`    | x402 decoded body with `data`, or MCP tool result                                                          | One query for x402; one per MCP content block |
+| `mapDataReceival(query, contentType?)`    | Entire decoded x402 body, or MCP tool result                                                               | One query for x402; one per MCP content block |
 | `mapMppDataReceival(query, contentType?)` | Entire decoded MPP response body (including plain text)                                                    | One query                                     |
 
 Every function returns `{ success: true, queries: [...] }` or
@@ -40,9 +40,8 @@ MCP `annotations` and `_meta` become `annotation` and `metadata`. The complete M
 payment `content` array becomes `additionalContent`. MCP delivery text maps to
 `body.value`, with the original block `type` as `contentType`; non-text blocks are
 preserved in full. Preserving a block does not imply Jev supports that media type.
-The x402 data mapper extracts only `data`; the MPP data mapper retains the entire
-body. This distinction is explicit to avoid mistaking a legitimate MPP `data` field
-for an x402 envelope.
+x402 does not define an envelope for paid content, so the x402 data mapper, like the
+MPP one, retains the entire decoded body.
 
 These functions prepare **Screen inputs**, retaining merchant text verbatim. They
 do not select or approve a payment option, enforce the supported payment profile,

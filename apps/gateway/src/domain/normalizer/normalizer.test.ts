@@ -240,15 +240,10 @@ describe('mapPaymentRequired', () => {
 });
 
 describe('data receival', () => {
-  it.each(['premium data', { nested: [1, false, null, description] }, null, false, 0, ''])(
-    'maps just the x402 data value, preserving its JSON type: %j',
+  it.each(['premium data', { nested: [1, false, null, description] }, null, false, 0, '', {}])(
+    'maps the whole x402 body, preserving its JSON type: %j',
     (data) => {
-      const [mapped] = queries(
-        mapDataReceival(
-          { data, timestamp: 'ignored', 'PAYMENT-RESPONSE': 'ignored' },
-          'application/json',
-        ),
-      );
+      const [mapped] = queries(mapDataReceival(data, 'application/json'));
       expect(mapped).toEqual({
         stage: 'data_receival',
         fields_to_inspect: {
@@ -304,8 +299,14 @@ describe('data receival', () => {
     expect(mapped?.fields_to_inspect.body).not.toHaveProperty('contentType');
   });
 
+  it('keeps every field of an x402 body, including one named data', () => {
+    const body = { data: 'payload', note: description };
+    const [mapped] = queries(mapDataReceival(body, 'application/json'));
+    expect(mapped?.fields_to_inspect.body.value).toEqual(body);
+  });
+
   it.each([
-    {},
+    undefined,
     { data: undefined },
     { data: 1n },
     { data: Number.NaN },

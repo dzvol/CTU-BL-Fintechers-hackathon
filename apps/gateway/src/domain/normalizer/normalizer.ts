@@ -72,7 +72,8 @@ const mcpDataSchema = rpc(
     content: z.array(contentBlockSchema),
   }),
 );
-const x402DataSchema = z.object({ data: z.json() });
+// x402 does not define a body envelope for paid content, so the whole decoded body is data.
+const x402DataSchema = z.json();
 
 function field<T, R extends string>(value: T, risk_type: R) {
   return { value, risk_type };
@@ -202,23 +203,22 @@ function dataQuery(value: JsonValue, contentType?: string): DataReceivalQuery {
   };
 }
 
-/** Map the decoded x402 body (`data` only), or every block in an MCP result. */
+/** Map the whole decoded x402 body, or every block in an MCP result. */
 export function mapDataReceival(
   query: unknown,
   contentType?: string,
 ): NormalizationResult<DataReceivalQuery> {
-  const schema = hasField(query, 'jsonrpc', 'result') ? mcpDataSchema : x402DataSchema;
-  return normalize(schema, query, (input) => {
-    if ('result' in input) {
-      return input.result.content.map((block) =>
+  if (hasField(query, 'jsonrpc', 'result')) {
+    return normalize(mcpDataSchema, query, (input) =>
+      input.result.content.map((block) =>
         dataQuery(
           block.type === 'text' && typeof block.text === 'string' ? block.text : block,
           block.type,
         ),
-      );
-    }
-    return [dataQuery(input.data, contentType)];
-  });
+      ),
+    );
+  }
+  return normalize(x402DataSchema, query, (input) => [dataQuery(input, contentType)]);
 }
 
 /** MPP maps the entire decoded body; the optional content type comes from the HTTP header. */
