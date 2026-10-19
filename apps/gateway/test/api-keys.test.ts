@@ -61,13 +61,3 @@ describe('API keys (dashboard) and agent auth', () => {
     expect(res.status).toBe(401);
   });
 });
-
-describe('not yet implemented services', () => {
-  it.each([['GET', '/api/reviews']])('%s %s answers 501 not_implemented', async (method, path) => {
-    const app = createTestApp();
-    const { sessionCookie } = await login(app);
-    const res = await asUser(app, sessionCookie, path, { method });
-    expect(res.status).toBe(501);
-    expect(await res.json()).toMatchObject({ error: { code: 'not_implemented' } });
-  });
-});

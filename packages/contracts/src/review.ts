@@ -13,7 +13,12 @@ export const ReviewSchema = z.object({
   status: ReviewStatusSchema,
   reason: VerdictReasonSchema,
   offer: NormalizedOfferSchema,
+  /** The URL the agent asked for. */
+  url: z.url().optional(),
+  /** Why the gateway asks, e.g. which Screen signal fired. Never merchant text. */
+  detail: z.string().optional(),
   createdAt: TimestampSchema,
+  /** pending: the user must decide by then; approved: the agent must resume by then. */
   expiresAt: TimestampSchema,
   decidedAt: TimestampSchema.optional(),
 });

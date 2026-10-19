@@ -1,4 +1,5 @@
-import { createHttpX402Transport } from '../src/adapters/x402';
+import { createHttpX402Transport, type X402PaymentRequired } from '../src/adapters/x402';
+import type { SelectedOffer } from '../src/services/payment-gateway/payment-gateway';
 
 export const MERCHANT = 'https://merchant.test';
 export const USDC_BASE_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
@@ -53,3 +54,19 @@ export async function fakeMerchantFetch(url: string): Promise<Response> {
 }
 
 export const fakeMerchantTransport = () => createHttpX402Transport({ fetch: fakeMerchantFetch });
+
+/** Stands in for member 3's offer selection: takes the first option as is. */
+export function fakeSelectOffer(paymentRequired: X402PaymentRequired): SelectedOffer {
+  const requirements = paymentRequired.accepts[0]!;
+  return {
+    requirements,
+    offer: {
+      scheme: 'exact',
+      network: 'base-sepolia',
+      asset: requirements.asset,
+      payTo: requirements.payTo,
+      amount: requirements.amount,
+      resourceUrl: paymentRequired.resource.url,
+    },
+  };
+}

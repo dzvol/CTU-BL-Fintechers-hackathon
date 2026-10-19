@@ -1,6 +1,7 @@
 // Fake agent for manual end-to-end testing. Like a real harness it talks to the gateway over MCP:
 //   1. reuses the key's active task, or submits an intent and waits for your dashboard decision,
-//   2. calls paid_fetch on every test-merchant scenario and prints expected vs actual outcome.
+//   2. calls paid_fetch on every test-merchant scenario and prints expected vs actual outcome,
+//   3. for each REVIEW waits for your dashboard decision and, if approved, calls paid_fetch again.
 //
 // Usage: npm run demo:agent -- <api key> [gateway url] [merchants url]
 //   gateway url   defaults to $GATEWAY_URL or http://localhost:8787
@@ -98,6 +99,7 @@ async function runScenarios() {
 
   log(`\nCalling paid_fetch on ${scenarios.length} scenarios at ${merchantsUrl} ...`);
   const rows = [];
+  const underReview: { path: string; url: string; operationId: string }[] = [];
   for (const scenario of scenarios) {
     const url = new URL(scenario.path, merchantsUrl).toString();
     try {
@@ -110,6 +112,9 @@ async function runScenarios() {
         verdict: result.verdict ?? '',
         reason: result.reason ?? '',
       });
+      if (result.state === 'awaiting_review') {
+        underReview.push({ path: scenario.path, url, operationId: result.operationId });
+      }
     } catch (err) {
       rows.push({
         path: scenario.path,
@@ -120,6 +125,22 @@ async function runScenarios() {
   }
   console.table(rows);
   log('\nFull messages are on the operations in the dashboard API (GET /api/operations).');
+  for (const review of underReview) await resumeReview(review);
+}
+
+/** Waits for the user's decision on one REVIEW and resumes the purchase if approved. */
+async function resumeReview(review: { path: string; url: string; operationId: string }) {
+  process.stdout.write(`\n${review.path} needs your review in the dashboard (click Refresh)`);
+  let check = await call('check_review', { operationId: review.operationId });
+  while (check.status === 'pending') {
+    await sleep(POLL_INTERVAL_MS);
+    process.stdout.write('.');
+    check = await call('check_review', { operationId: review.operationId });
+  }
+  log(`\nReview ${check.status}: ${check.message}`);
+  if (check.status !== 'approved') return;
+  const result = await call('paid_fetch', { url: review.url });
+  log(`paid_fetch again → ${result.state}: ${result.message}`);
 }
 
 async function main() {

@@ -1,8 +1,9 @@
-import type { Intent, Me, Task } from '@semanticauth/contracts';
+import type { Intent, Me, Review, Task } from '@semanticauth/contracts';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchMe, LOGIN_URL, logout } from './api/auth';
 import { approveIntent, fetchPendingIntent, rejectIntent } from './api/intents';
 import { createApiKey } from './api/keys';
+import { approveReview, fetchPendingReviews, rejectReview } from './api/reviews';
 import { closeTask, fetchActiveTask } from './api/tasks';
 
 export function App() {
@@ -11,13 +12,15 @@ export function App() {
   const [newKey, setNewKey] = useState<string>();
   const [intent, setIntent] = useState<Intent>();
   const [task, setTask] = useState<Task>();
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string>();
 
   const refresh = useCallback(() => {
-    Promise.all([fetchPendingIntent(), fetchActiveTask()]).then(
-      ([pendingIntent, activeTask]) => {
+    Promise.all([fetchPendingIntent(), fetchActiveTask(), fetchPendingReviews()]).then(
+      ([pendingIntent, activeTask, pendingReviews]) => {
         setIntent(pendingIntent);
         setTask(activeTask);
+        setReviews(pendingReviews);
       },
       (err: Error) => setError(err.message),
     );
@@ -34,7 +37,7 @@ export function App() {
   if (me === undefined) return null;
   if (me === null) return <a href={LOGIN_URL}>Sign in with Google</a>;
 
-  /** Runs an action, shows its error if any, then reloads intent and task. */
+  /** Runs an action, shows its error if any, then reloads intent, task and reviews. */
   const act = (action: () => Promise<unknown>) => () => {
     setError(undefined);
     action().then(refresh, (err: Error) => setError(err.message));
@@ -68,6 +71,14 @@ export function App() {
           <button onClick={act(() => closeTask(task.id))}>Close task</button>
         </div>
       )}
+
+      {reviews.map((review) => (
+        <div key={review.id}>
+          <pre>{JSON.stringify(review, null, 2)}</pre>
+          <button onClick={act(() => approveReview(review.id))}>Approve purchase</button>
+          <button onClick={act(() => rejectReview(review.id))}>Reject purchase</button>
+        </div>
+      ))}
 
       {error && <p>{error}</p>}
       <button onClick={() => logout().then(() => setMe(null))}>Logout</button>

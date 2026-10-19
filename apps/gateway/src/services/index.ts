@@ -1,11 +1,11 @@
 import type { JevClient } from '../adapters/jev/jev-client';
 import type { Store } from '../adapters/store';
-import type { X402Transport } from '../adapters/x402';
+import type { X402PaymentRequired, X402Transport } from '../adapters/x402';
 import { defaultPolicy, type Policy } from '../domain/policy/policy';
 import { createAccountService } from './account/account-service';
 import { createApiKeyService } from './account/api-key-service';
 import { createIntentService } from './intent/intent-service';
-import { createPaymentGateway } from './payment-gateway/payment-gateway';
+import { createPaymentGateway, type SelectedOffer } from './payment-gateway/payment-gateway';
 import { createReviewService } from './review/review-service';
 import { createTaskService } from './task/task-service';
 
@@ -18,6 +18,8 @@ export function createServices(deps: {
   jev: JevClient;
   /** Tests may swap the rules; defaults to the real Policy. */
   policy?: Policy;
+  /** Tests only, until member 3's offer selection exists. */
+  selectOffer?: (paymentRequired: X402PaymentRequired) => SelectedOffer | undefined;
   now?: () => Date;
 }) {
   const { store, now } = deps;
@@ -49,23 +51,32 @@ export function createServices(deps: {
     now,
   });
 
+  const reviews = createReviewService({
+    reviews: store.reviews,
+    operations: store.operations,
+    transaction: store.transaction,
+    now,
+  });
+
   return {
     accounts,
     apiKeys,
     tasks,
     intents,
+    reviews,
     payments: createPaymentGateway({
       operations: store.operations,
       allocations: store.allocations,
       tasks,
       intents,
+      reviews,
       transaction: store.transaction,
       transport: deps.transport,
       policy: deps.policy ?? defaultPolicy,
       jev: deps.jev,
+      selectOffer: deps.selectOffer,
       now,
     }),
-    reviews: createReviewService(),
   };
 }
 

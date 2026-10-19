@@ -4,6 +4,7 @@ import type { Db } from './db';
 import { createIntentRepository } from './intents';
 import { createLedgerRepository } from './ledger';
 import { createOperationRepository } from './operations';
+import { createReviewRepository } from './reviews';
 import { createSessionRepository } from './sessions';
 import { createTaskRepository } from './tasks';
 import { createUserRepository } from './users';
@@ -21,6 +22,7 @@ export type {
   ReserveResult,
 } from './ledger';
 export type { OperationPatch, OperationRecord, OperationRepository } from './operations';
+export type { ReviewRecord, ReviewRepository } from './reviews';
 export type { TaskRecord, TaskRepository } from './tasks';
 export type { SessionRecord, SessionRepository } from './sessions';
 export type { UserProfileUpdate, UserRecord, UserRepository } from './users';
@@ -38,6 +40,7 @@ export function createStore(db: Db) {
     tasks: createTaskRepository(db),
     operations: createOperationRepository(db),
     ledger: createLedgerRepository(db),
+    reviews: createReviewRepository(db),
     transaction: (<T>(fn: () => T): T => db.transaction(fn)()) as Transaction,
   };
 }
