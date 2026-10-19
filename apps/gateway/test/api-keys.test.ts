@@ -63,10 +63,7 @@ describe('API keys (dashboard) and agent auth', () => {
 });
 
 describe('not yet implemented services', () => {
-  it.each([
-    ['GET', '/api/operations'],
-    ['GET', '/api/reviews'],
-  ])('%s %s answers 501 not_implemented', async (method, path) => {
+  it.each([['GET', '/api/reviews']])('%s %s answers 501 not_implemented', async (method, path) => {
     const app = createTestApp();
     const { sessionCookie } = await login(app);
     const res = await asUser(app, sessionCookie, path, { method });

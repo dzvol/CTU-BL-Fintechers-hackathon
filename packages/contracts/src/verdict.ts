@@ -12,6 +12,10 @@ export const VerdictReasonSchema = z.enum([
   'jev_unavailable',
   'prompt_injection',
   'off_intent',
+  /** The merchant couldn't be reached or answered with an error; nothing was paid. */
+  'merchant_error',
+  /** A pipeline step failed or isn't implemented; fail-closed, nothing was paid. */
+  'internal_error',
   // REVIEW
   'recipient_change',
   'subscription',

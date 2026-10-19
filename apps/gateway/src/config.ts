@@ -22,6 +22,7 @@ const EnvSchema = z.object({
     z.string().min(32, 'generate one with: openssl rand -hex 32').optional(),
   ),
   USER_ALLOCATION_USDC: UsdcDecimalSchema.default('2'),
+  X402_ALLOW_HTTP_LOCALHOST: z.stringbool().default(false),
 });
 
 export interface GoogleConfig {
@@ -39,6 +40,8 @@ export interface Config {
   sessionSecret: string;
   secureCookies: boolean;
   userAllocation: bigint;
+  /** Dev only: lets the gateway call merchants on http://localhost (tests/merchants). */
+  x402AllowHttpLocalhost: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -73,5 +76,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret: e.SESSION_SECRET ?? randomBytes(32).toString('hex'),
     secureCookies: google ? new URL(google.redirectUri).protocol === 'https:' : isProduction,
     userAllocation: parseUsdc(e.USER_ALLOCATION_USDC),
+    x402AllowHttpLocalhost: e.X402_ALLOW_HTTP_LOCALHOST,
   };
 }

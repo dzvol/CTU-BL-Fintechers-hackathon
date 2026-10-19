@@ -2,6 +2,7 @@ import { createAllocationRepository } from './allocations';
 import { createApiKeyRepository } from './api-keys';
 import type { Db } from './db';
 import { createIntentRepository } from './intents';
+import { createOperationRepository } from './operations';
 import { createSessionRepository } from './sessions';
 import { createTaskRepository } from './tasks';
 import { createUserRepository } from './users';
@@ -11,6 +12,7 @@ export { openDatabase } from './db';
 export type { AllocationRepository } from './allocations';
 export type { ApiKeyRecord, ApiKeyRepository } from './api-keys';
 export type { IntentRecord, IntentRepository } from './intents';
+export type { OperationPatch, OperationRecord, OperationRepository } from './operations';
 export type { TaskRecord, TaskRepository } from './tasks';
 export type { SessionRecord, SessionRepository } from './sessions';
 export type { UserProfileUpdate, UserRecord, UserRepository } from './users';
@@ -26,6 +28,7 @@ export function createStore(db: Db) {
     apiKeys: createApiKeyRepository(db),
     intents: createIntentRepository(db),
     tasks: createTaskRepository(db),
+    operations: createOperationRepository(db),
     transaction: (<T>(fn: () => T): T => db.transaction(fn)()) as Transaction,
   };
 }

@@ -19,8 +19,8 @@ describe('MCP server', () => {
     const client = await connect(app, key);
 
     const result = await client.callTool({
-      name: 'paid_fetch',
-      arguments: { url: 'https://merchant.example/data' },
+      name: 'check_review',
+      arguments: { operationId: 'op_00000000-0000-0000-0000-000000000000' },
     });
     expect(result.isError).toBe(true);
     expect(JSON.stringify(result.content)).toContain('not_implemented');
