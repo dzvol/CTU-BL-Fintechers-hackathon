@@ -221,7 +221,7 @@ describe('x402 HTTP transport', () => {
     const result = await transport.fetchResource({ url });
     expect(result.kind).toBe('content');
     if (result.kind !== 'content') throw new Error('Expected content');
-    expect(result.normalizerInput).toEqual({ data: body });
+    expect(result.normalizerInput).toEqual(body);
     expect(result.paymentAttempted).toBe(false);
     expect(result.paymentResponse.status).toBe('absent');
   });
@@ -330,7 +330,7 @@ describe('x402 HTTP transport', () => {
     if (result.kind !== 'content') throw new Error('Expected content');
     expect(Array.from(result.response.rawBody)).toEqual(Array.from(bytes));
     expect(result.response.bodyFormat).toBe('base64');
-    expect(result.normalizerInput).toEqual({ data: Buffer.from(bytes).toString('base64') });
+    expect(result.normalizerInput).toEqual(Buffer.from(bytes).toString('base64'));
     expect(mapDataReceival(result.normalizerInput, result.response.contentType).success).toBe(true);
   });
 

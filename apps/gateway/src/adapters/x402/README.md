@@ -62,11 +62,11 @@ header takes precedence over the body. Body-only v2 offers are accepted for
 compatibility with the templates; a malformed header never falls back to the body.
 
 For every other received response, pass `normalizerInput` to `mapDataReceival`, with
-`response.contentType` as the optional second argument. It wraps the **entire**
-merchant body as `{ data: body }`. This lets the normalizer handle the arbitrary
-application JSON delivered by `tests/merchants`, plain text, and binary content,
-without assuming the merchant itself uses a `data` wrapper. Unknown media support
-must be handled by the Screen caller.
+`response.contentType` as the optional second argument. It is the **entire**
+merchant body, unwrapped: x402 defines no envelope for paid content, and the normalizer
+treats the whole body as data. This covers the arbitrary application JSON delivered by
+`tests/merchants`, plain text, and binary content (base64). Unknown media support must be
+handled by the Screen caller.
 
 `paymentResponse` reports `absent`, `valid`, or `invalid`. Here `valid` means the
 `PAYMENT-RESPONSE` header has a valid wire structure; it is a merchant claim, not
