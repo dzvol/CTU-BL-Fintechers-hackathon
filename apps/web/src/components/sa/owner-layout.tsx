@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate, useMatches } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  Shield,
   Wallet,
   CreditCard,
   Clock3,
@@ -31,6 +32,7 @@ const NAV = [
   { to: '/connect', label: 'Agents', icon: UserRound },
   { to: '/wallets', label: 'Wallets', icon: Wallet },
   { to: '/plans', label: 'Plan & usage', icon: CreditCard },
+  { to: '/admin', label: 'Administration preview', icon: Shield },
   { to: '/faq', label: 'FAQ', icon: CircleHelp },
   { to: '/contact', label: 'Contact', icon: Mail },
 ] as const;

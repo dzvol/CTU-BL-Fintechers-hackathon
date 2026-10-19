@@ -1,4 +1,3 @@
-import { PublicShell } from '@/components/sa/public-shell';
 import { PageHeader, Unsupported } from '@/components/sa/common';
 export function Faq() {
   return (
@@ -36,7 +35,7 @@ export function Faq() {
           <h2 className="mb-2 font-semibold">What is still unavailable?</h2>
           <p>
             Purchase review decisions return 501 in this backend. Paid offer selection, payment
-            execution and ledger totals are incomplete. Magic links, administration, contact
+            execution and ledger totals are incomplete. Magic links, admin data access, contact
             submission and detailed audit evidence have no dashboard implementation yet.
           </p>
         </div>
@@ -53,16 +52,5 @@ export function Contact() {
         message will be sent from this page.
       </Unsupported>
     </>
-  );
-}
-export function AdminUnavailable() {
-  return (
-    <PublicShell>
-      <PageHeader title="Administration" />
-      <Unsupported>
-        User roles and administrator operations are not exposed by the gateway. Administration is
-        unavailable.
-      </Unsupported>
-    </PublicShell>
   );
 }

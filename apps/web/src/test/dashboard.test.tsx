@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App, router, queryClient } from '../App';
 import { intent, key, operation, task, user } from './fixtures';
@@ -250,6 +250,34 @@ describe('dashboard user flows with gateway contract responses', () => {
     );
     await screen.findByText('No activity matches your filters');
     expect(screen.queryByText('synthetic-test-secret')).toBeNull();
+  });
+  it('shows read-only admin layouts without inventing user data or calling missing APIs', async () => {
+    await open('/admin');
+    await screen.findByRole('heading', { name: 'Administration' });
+    await screen.findByText('Administrator access is not enabled yet');
+    await userEvent.click(screen.getByRole('link', { name: 'View users layout' }));
+    await screen.findByRole('heading', { name: 'Registered users' });
+    expect(screen.getByRole('columnheader', { name: 'Last login' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'View user' })).toBeNull();
+    await userEvent.click(
+      within(screen.getByRole('navigation', { name: 'Administration' })).getByRole('link', {
+        name: 'Plans & usage',
+      }),
+    );
+    await screen.findByText(/Plan assignments, request metering, billing periods, and quotas/);
+    expect(requests.some((r) => r.path.startsWith('/api/admin'))).toBe(false);
+    expect(requests.some((r) => r.method !== 'GET')).toBe(false);
+  });
+  it('requires a session for admin previews and supports the user detail scaffold', async () => {
+    await open(`/admin/users/${user.id}`);
+    await screen.findByRole('heading', { name: 'User details' });
+    await screen.findByRole('columnheader', { name: 'Key prefix' });
+    loggedIn = false;
+    await act(async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+    });
+    await screen.findByRole('link', { name: 'Continue with Google' });
+    expect(screen.queryByRole('heading', { name: 'User details' })).toBeNull();
   });
   it('clears private screens after logout and after a session expires', async () => {
     await open('/overview');

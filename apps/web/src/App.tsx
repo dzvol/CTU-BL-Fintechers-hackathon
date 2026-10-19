@@ -12,7 +12,8 @@ import {
 import { SessionBoundary } from './components/sa/session-boundary';
 import { OwnerLayout } from './components/sa/owner-layout';
 import { Activity, FILTERS, type ActivityFilter } from './pages/activity';
-import { Faq, Contact, AdminUnavailable } from './pages/information';
+import { Faq, Contact } from './pages/information';
+import { Administration } from './pages/admin';
 import { Wallets, Plans } from './pages/account';
 import { Toaster } from './components/ui/sonner';
 import './styles.css';
@@ -100,15 +101,39 @@ const contact = createRoute({
   staticData: { public: true },
 });
 const admin = createRoute({
-  getParentRoute: () => root,
+  getParentRoute: () => owner,
   path: '/admin',
-  component: AdminUnavailable,
+  component: Administration,
+});
+const adminUsers = createRoute({
+  getParentRoute: () => owner,
+  path: '/admin/users',
+  component: Administration,
+});
+const adminUser = createRoute({
+  getParentRoute: () => owner,
+  path: '/admin/users/$id',
+  component: Administration,
+});
+const adminPlans = createRoute({
+  getParentRoute: () => owner,
+  path: '/admin/plans',
+  component: Administration,
+});
+const adminActivity = createRoute({
+  getParentRoute: () => owner,
+  path: '/admin/activity',
+  component: Administration,
 });
 export const router = createRouter({
   routeTree: root.addChildren([
     signIn,
-    admin,
     owner.addChildren([
+      admin,
+      adminUsers,
+      adminUser,
+      adminPlans,
+      adminActivity,
       overview,
       tasks,
       task,
