@@ -1,12 +1,13 @@
 import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
+import { createApp } from './app';
+import { loadEnv } from './env';
+import { SCENARIOS } from './scenarios';
 
-const app = new Hono();
+const env = loadEnv();
 
-app.get('/health', (c) => c.json({ status: 'ok' }));
-
-const port = Number(process.env.MERCHANTS_PORT ?? 4021);
-
-serve({ fetch: app.fetch, port }, (info) => {
+serve({ fetch: createApp(env).fetch, port: env.MERCHANTS_PORT }, (info) => {
   console.log(`Test merchants listening on http://localhost:${info.port}`);
+  for (const s of SCENARIOS) {
+    console.log(`  ${s.expected.padEnd(6)} ${s.path}`);
+  }
 });
