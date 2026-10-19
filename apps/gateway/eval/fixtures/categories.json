@@ -1,0 +1,43 @@
+{
+  "author": "draft:claude (review before the test run)",
+  "categories": {
+    "crypto_data": {
+      "description": "Crypto market data: prices, volumes, market caps, on-chain metrics",
+      "adjacent": ["financial_news", "trading_signals"]
+    },
+    "financial_news": {
+      "description": "Financial and business news, earnings, macro reports",
+      "adjacent": ["crypto_data"]
+    },
+    "weather": {
+      "description": "Weather forecasts, climate and air-quality data",
+      "adjacent": ["maps_geo"]
+    },
+    "maps_geo": {
+      "description": "Maps, geocoding, routing, places and location data",
+      "adjacent": ["weather"]
+    },
+    "ai_inference": {
+      "description": "AI model inference: text, image or speech generation, embeddings",
+      "adjacent": ["web_search"]
+    },
+    "web_search": {
+      "description": "Web search, scraping and page extraction APIs",
+      "adjacent": ["ai_inference"]
+    },
+    "gambling": {
+      "description": "Betting, casino, lotteries, games of chance",
+      "adjacent": [],
+      "forbiddenBy": "gambling or games of chance"
+    },
+    "trading_signals": {
+      "description": "Trading signals, copy trading, investment products, yield",
+      "adjacent": ["crypto_data"],
+      "forbiddenBy": "trading, investments or deposits"
+    },
+    "other": {
+      "description": "Anything else (personal services, adult, unclear)",
+      "adjacent": []
+    }
+  }
+}
