@@ -1,19 +1,6 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { MCP_TOOLS } from '@semanticauth/contracts';
 import { describe, expect, it } from 'vitest';
-import { asUser, createAgentKey, createTestApp, type TestApp } from './helpers';
-
-/** A real MCP client talking to the in-process app over Streamable HTTP. */
-async function connect(app: TestApp, key: string) {
-  const client = new Client({ name: 'test-agent', version: '0.0.0' });
-  const transport = new StreamableHTTPClientTransport(new URL('http://gateway.test/mcp'), {
-    fetch: async (url, init) => app.request(url.toString(), init),
-    requestInit: { headers: { authorization: `Bearer ${key}` } },
-  });
-  await client.connect(transport);
-  return client;
-}
+import { asUser, connectMcp as connect, createAgentKey, createTestApp } from './helpers';
 
 describe('MCP server', () => {
   it('lists every tool from the contract', async () => {
