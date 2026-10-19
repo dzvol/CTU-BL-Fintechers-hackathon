@@ -77,6 +77,7 @@ npm run eval:label -- --agreement f    # Cohen's κ against a second person's wo
 npm run eval -- --suite screen-benign,screen-injection --split dev
 npm run eval -- --suite e2e --split dev --offline      # only from cache, no key, no spend
 npm run eval:tune -- data/results/<run>                # thresholds + question ablation (dev only)
+npm run eval:compare -- <before> <after>              # two snapshots or run dirs
 npm run eval:report -- data/results/<run> --thresholds data/results/<run>/best-thresholds.json
 npm run eval -- --all --split test --final             # once, at the end
 ```
@@ -85,6 +86,27 @@ A final run writes `results/<run>/` with `records.json`, `summary.json`, `report
 `manifest.json` (git commit, model, question hashes, thresholds, source hashes) and
 `jev-cache.jsonl` (exactly the answers it used). Anyone can reproduce it without a Jev key:
 `npm run eval -- --all --split test --final --offline --cache results/<run>/jev-cache.jsonl`.
+
+## Snapshots: is a change better or worse?
+
+Save the state before a change, change something (questions, thresholds, decision rules), run
+again under a new name, compare:
+
+```bash
+npm run eval -- --all --split dev --name baseline            # state before
+# … change src/domain/jev/*-questions.ts or decide.ts …
+npm run eval -- --all --split dev --name questions-v2        # new Jev answers where needed
+npm run eval:compare -- baseline questions-v2                # metrics, deltas, flipped cases
+
+# thresholds only: no new Jev calls, re-report the same answers
+npm run eval:report -- baseline --thresholds my-thresholds.json --name thresholds-v2
+npm run eval:compare -- baseline thresholds-v2
+```
+
+A snapshot (`eval/snapshots/<name>/`, gitignored) holds the manifest (git commit, model, question
+hashes, thresholds, source hashes), the summary, the report and every Jev answer. `eval:compare`
+shows what changed in the setup, each metric before/after with "better"/"worse", and the cases
+that got fixed or broke. Snapshots are dev only; `--force` replaces one.
 
 ## Rules that keep the numbers defensible
 

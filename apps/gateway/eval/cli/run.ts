@@ -4,9 +4,11 @@
 //   --limit N        first N cases per suite (smoke runs)
 //   --concurrency N  parallel cases (default 8)
 //   --thresholds f   JSON Thresholds to report with (default: the production ones)
+//   --name n         also save the run as snapshot eval/snapshots/<n> (compare: npm run eval:compare)
+//   --force          replace an existing snapshot of that name
 //   --cache f        Jev cache file (default eval/data/cache/jev.jsonl); pass a final run's
 //                    jev-cache.jsonl with --offline to reproduce it without a Jev key
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHttpJevClient } from '../../src/adapters/jev/jev-client';
 import { loadConfig } from '../../src/config';
@@ -19,6 +21,7 @@ import { readJsonl, writeJson } from '../jsonl';
 import { percentile } from '../metrics';
 import { PATHS } from '../paths';
 import { summarize, toMarkdown } from '../report';
+import { saveSnapshot } from '../snapshots';
 import { runCases } from '../runner';
 import { fail, gitState, parseArgs, runId } from './args';
 
@@ -39,6 +42,12 @@ const suites = args.has('all')
 const thresholds: Thresholds = args.get('thresholds')
   ? (JSON.parse(readFileSync(args.get('thresholds')!, 'utf8')) as Thresholds)
   : DEFAULT_THRESHOLDS;
+
+// Check the snapshot name before spending time and Jev calls on the run.
+const snapshotName = args.get('name');
+if (snapshotName && existsSync(join(PATHS.snapshots, snapshotName)) && !args.has('force')) {
+  fail(`Snapshot "${snapshotName}" exists; pick another --name or pass --force to replace it.`);
+}
 
 const offline = args.has('offline');
 const config = offline ? undefined : loadConfig();
@@ -118,3 +127,11 @@ if (final) {
 }
 console.log(markdown);
 console.log(`\n→ ${dir}`);
+if (args.get('name')) {
+  const snapshot = saveSnapshot(
+    args.get('name')!,
+    { manifest, summary, records, markdown },
+    { force: args.has('force') },
+  );
+  console.log(`→ snapshot ${snapshot}`);
+}

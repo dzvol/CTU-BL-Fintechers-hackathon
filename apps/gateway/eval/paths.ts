@@ -16,6 +16,8 @@ export const PATHS = {
   devResults: at('./data/results/'),
   /** Final test runs, committed together with their Jev cache. */
   results: at('./results/'),
+  /** Named dev snapshots to compare against (gitignored). */
+  snapshots: at('./snapshots/'),
   /** Labeling worksheets for people (gitignored). */
   labeling: at('./data/labeling/'),
 };
