@@ -7,3 +7,4 @@ export * from './operation';
 export * from './review';
 export * from './mcp';
 export * from './errors';
+export * from './dashboard-api';
