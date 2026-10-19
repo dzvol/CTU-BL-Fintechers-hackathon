@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
+import { createRpcChainReader, type ChainReader } from './adapters/chain-reader';
 import {
   createGoogleOAuthClient,
   type GoogleOAuthClient,
@@ -9,6 +10,7 @@ import {
   createUnconfiguredJev,
   type JevClient,
 } from './adapters/jev/jev-client';
+import { createEoaSigner, type Signer } from './adapters/signer';
 import { createStore, openDatabase } from './adapters/store';
 import { createHttpX402Transport, type X402Transport } from './adapters/x402';
 import { createAuthRoutes } from './api/dashboard/auth-routes';
@@ -26,6 +28,8 @@ export interface AppOverrides {
   googleOAuth?: GoogleOAuthClient;
   x402Transport?: X402Transport;
   jev?: JevClient;
+  signer?: Signer;
+  chainReader?: ChainReader;
   now?: () => Date;
 }
 
@@ -43,11 +47,20 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
       overrides.x402Transport ??
       createHttpX402Transport({ allowHttpLocalhost: config.x402AllowHttpLocalhost }),
     jev: overrides.jev ?? (config.jev ? createHttpJevClient(config.jev) : createUnconfiguredJev()),
+    // The Signer reads SPONSOR_PRIVATE_KEY itself; an invalid key stops the gateway here.
+    signer:
+      overrides.signer ??
+      (config.payments.signer ? createEoaSigner(config.payments.signer) : undefined),
+    chainReader: overrides.chainReader ?? createRpcChainReader(config.payments.chainReader),
+    poolLimit: config.payments.poolLimit,
     userAllocation: config.userAllocation,
     webBaseUrl: config.webBaseUrl,
     now: overrides.now,
   });
   const { accounts, apiKeys } = services;
+  // Before serving: nothing of this process is in flight yet, so anything in flight was interrupted.
+  const recovered = services.payments.recoverInterrupted();
+  if (recovered > 0) console.warn(`Recovered ${recovered} operation(s) interrupted by a restart`);
   const rateLimiter = createRateLimiter(AGENT_RATE_LIMIT);
 
   const app = new Hono();

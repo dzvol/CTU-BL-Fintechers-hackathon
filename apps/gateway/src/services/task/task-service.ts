@@ -1,5 +1,12 @@
 import { newId, type ApiKeyId, type Task, type TaskId, type UserId } from '@semanticauth/contracts';
-import type { IntentRecord, TaskRecord, TaskRepository, Transaction } from '../../adapters/store';
+import type {
+  IntentRecord,
+  LedgerRepository,
+  TaskRecord,
+  TaskRepository,
+  Transaction,
+} from '../../adapters/store';
+import type { Balance } from '../../domain/ledger';
 import type { AgentContext } from '../context';
 import { ConflictError, ForbiddenError, NotFoundError } from '../errors';
 
@@ -22,16 +29,15 @@ export interface TaskService {
   closeForApiKey(apiKeyId: ApiKeyId, at: string): void;
 }
 
-const toTask = (record: TaskRecord): Task => ({
+const toTask = (record: TaskRecord, balance: Balance): Task => ({
   id: record.id,
   intentId: record.intentId,
   userId: record.userId,
   apiKeyId: record.apiKeyId,
   status: record.status,
   budget: record.budget.toString(),
-  // TODO(ledger): read spent/reserved from the ledger once it exists.
-  spent: '0',
-  reserved: '0',
+  spent: balance.spent.toString(),
+  reserved: balance.reserved.toString(),
   createdAt: record.createdAt,
   expiresAt: record.expiresAt,
   closedAt: record.closedAt ?? undefined,
@@ -39,12 +45,14 @@ const toTask = (record: TaskRecord): Task => ({
 
 export function createTaskService(deps: {
   tasks: TaskRepository;
+  ledger: Pick<LedgerRepository, 'taskBalance'>;
   transaction: Transaction;
   now?: () => Date;
 }): TaskService {
   const now = deps.now ?? (() => new Date());
   // Expiry is applied lazily: every read first moves overdue active tasks to `expired`.
   const expireStale = () => deps.tasks.expireStale(now().toISOString());
+  const view = (record: TaskRecord) => toTask(record, deps.ledger.taskBalance(record.id));
 
   const owned = (userId: UserId, taskId: TaskId) => {
     const task = deps.tasks.findById(taskId);
@@ -57,17 +65,17 @@ export function createTaskService(deps: {
     getActiveTask(agent) {
       expireStale();
       const task = deps.tasks.findActiveByApiKey(agent.apiKeyId);
-      return task ? toTask(task) : null;
+      return task ? view(task) : null;
     },
 
     listForUser(userId) {
       expireStale();
-      return deps.tasks.listByUser(userId).map(toTask);
+      return deps.tasks.listByUser(userId).map(view);
     },
 
     getForUser(userId, taskId) {
       expireStale();
-      return toTask(owned(userId, taskId));
+      return view(owned(userId, taskId));
     },
 
     close(userId, taskId) {
@@ -77,7 +85,7 @@ export function createTaskService(deps: {
         if (!deps.tasks.close(task.id, now().toISOString())) {
           throw new ConflictError('task_not_active', `Task is already ${task.status}`);
         }
-        return toTask(deps.tasks.findById(task.id)!);
+        return view(deps.tasks.findById(task.id)!);
       });
     },
 
@@ -104,7 +112,7 @@ export function createTaskService(deps: {
         closedAt: null,
       };
       deps.tasks.insert(task);
-      return toTask(task);
+      return view(task);
     },
 
     closeForApiKey: (apiKeyId, at) => deps.tasks.closeActiveByApiKey(apiKeyId, at),

@@ -1,5 +1,7 @@
 import {
+  formatUsdc,
   newId,
+  TxHashSchema,
   type NormalizedOffer,
   type Operation,
   type OperationId,
@@ -12,23 +14,33 @@ import {
   type UserId,
   type VerdictReason,
 } from '@semanticauth/contracts';
+import type { ChainReader, PaymentVerification } from '../../adapters/chain-reader';
 import type { JevClient } from '../../adapters/jev/jev-client';
+import { SIGNER_PROFILE, type Signer } from '../../adapters/signer';
 import type {
   AllocationRepository,
+  LedgerRepository,
   OperationPatch,
   OperationRecord,
   OperationRepository,
+  PaymentRepository,
   Transaction,
 } from '../../adapters/store';
-import type {
-  X402HttpResponse,
-  X402PaymentRequired,
-  X402PaymentRequirements,
-  X402Request,
-  X402Transport,
+import {
+  encodePaymentSignature,
+  type X402HttpResponse,
+  type X402PaymentRequired,
+  type X402Request,
+  type X402Transport,
+  type X402TransportResult,
 } from '../../adapters/x402';
 import type { Purchase } from '../../domain/facts/facts';
 import { toScreenState, type ScreenState } from '../../domain/jev/state';
+import {
+  checkReservation,
+  toVerdictReason,
+  type ReservationRejectReason,
+} from '../../domain/ledger';
 import { mapPaymentRequired } from '../../domain/normalizer';
 import { canTransition, failureState } from '../../domain/operation/state-machine';
 import type { Policy } from '../../domain/policy/policy';
@@ -38,6 +50,9 @@ import type { IntentService } from '../intent/intent-service';
 import type { ReviewService } from '../review/review-service';
 import type { TaskService } from '../task/task-service';
 import { evaluateOffer } from './evaluation';
+import { selectOffer as selectSupportedOffer, type SelectedOffer } from './offer-selection';
+
+export type { SelectedOffer } from './offer-selection';
 
 export interface PaymentGateway {
   /**
@@ -47,41 +62,12 @@ export interface PaymentGateway {
   paidFetch(agent: AgentContext, input: PaidFetchInput): Promise<PaidFetchResult>;
   listOperations(userId: UserId, filter: { taskId?: TaskId }): Operation[];
   getOperation(userId: UserId, operationId: OperationId): Operation;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Places where member 3's and the Jev step's work plugs in. Until then the operation is blocked
-// (fail-closed) or the step passes through.
-
-/** The x402 option the gateway would pay, as Policy sees it plus the raw option for the signer. */
-export interface SelectedOffer {
-  offer: NormalizedOffer;
-  requirements: X402PaymentRequirements;
-}
-
-/**
- * TODO(member 3): pick the option in `accepts` that matches the supported profile (scheme
- * `exact`, Base Sepolia, USDC) and build the NormalizedOffer. No matching option → undefined,
- * which blocks with `unsupported_offer`.
- */
-function placeholderSelectOffer(_paymentRequired: X402PaymentRequired): SelectedOffer | undefined {
-  throw new NotImplementedError('Offer selection (NormalizedOffer)');
-}
-
-async function executePayment(
-  _run: Run,
-  _request: X402Request,
-  _selected: SelectedOffer,
-): Promise<Delivery> {
-  // TODO(member 3), in this order, each step moving the operation forward:
-  //   ledger: atomic reservation          requested → reserved  (no funds → BLOCK insufficient_allocation)
-  //                                       or awaiting_review → reserved after an approved review
-  //   signer: EIP-3009 authorization      reserved → prepared   (uses selected.requirements.extra)
-  //   encodePaymentSignature + persist    prepared → issued     (BEFORE it leaves the gateway)
-  //   transport.fetchWithPayment          issued → submitted
-  //   ChainReader verifies settlement     submitted → settled   (unclear → unknown)
-  //   screenDelivery, content to agent    settled → delivered / delivery_failed
-  throw new NotImplementedError('Payment execution');
+  /**
+   * Call once at startup, before serving requests: operations a previous process left in
+   * flight are blocked (nothing was signed yet, the reservation is released) or marked unknown
+   * (the authorization may have left; it stays spent for reconciliation). Returns how many.
+   */
+  recoverInterrupted(): number;
 }
 
 /**
@@ -89,29 +75,40 @@ async function executePayment(
  * it. The Screen input comes from mapDataReceival(result.normalizerInput, contentType).
  */
 async function screenDelivery(_result: { response: X402HttpResponse; normalizerInput: unknown }) {}
-// ---------------------------------------------------------------------------------------------
 
-/** Operation states in which the offer's amount is reserved or counts as spent. */
-const COMMITTED: ReadonlySet<OperationState> = new Set([
+/** How often to read the chain again while the merchant's transaction isn't visible yet. */
+export interface SettlementChecks {
+  attempts: number;
+  delayMs: number;
+}
+const DEFAULT_SETTLEMENT_CHECKS: SettlementChecks = { attempts: 5, delayMs: 2_000 };
+
+/** Chain reads that may succeed a moment later. Reading again never pays again. */
+const TRANSIENT: ReadonlySet<string> = new Set([
+  'receipt_not_found',
+  'insufficient_confirmations',
+  'rpc_unavailable',
+]);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const REPEATED = 'This URL was already requested in this task; this is the original operation.';
+
+const RESERVATION_DETAIL: Record<ReservationRejectReason, string> = {
+  invalid_amount: 'the price is not a positive amount',
+  task_budget_exceeded: 'the price no longer fits the task budget',
+  insufficient_allocation: 'the price no longer fits your allocation',
+  sponsor_pool_exhausted: 'the sponsor pool has no funds left for this payment',
+};
+
+/** Left in flight by a process that stopped; see `recoverInterrupted`. */
+const IN_FLIGHT: readonly OperationState[] = [
+  'requested',
   'reserved',
   'prepared',
   'issued',
   'submitted',
-  'settled',
-  'delivered',
-  'delivery_failed',
-  'unknown',
-]);
-
-// TODO(ledger): take these from the ledger once it exists; operations are the record until then.
-const purchasesOf = (operations: OperationRecord[]): Purchase[] =>
-  operations.flatMap((op) =>
-    op.offer && COMMITTED.has(op.state)
-      ? [{ taskId: op.taskId, payTo: op.offer.payTo, amount: BigInt(op.offer.amount) }]
-      : [],
-  );
-
-const REPEATED = 'This URL was already requested in this task; this is the original operation.';
+];
 
 interface Delivery {
   content: string;
@@ -139,6 +136,8 @@ type Fetched =
 /** The operation being processed; every state change goes through `move`. */
 interface Run {
   readonly id: OperationId;
+  readonly taskId: TaskId;
+  readonly userId: UserId;
   readonly url: string;
   readonly state: OperationState;
   move(to: OperationState, patch?: OperationPatch): void;
@@ -188,9 +187,14 @@ function toResult(
   };
 }
 
+const paid = (offer: NormalizedOffer) =>
+  `${formatUsdc(BigInt(offer.amount))} USDC to ${offer.payTo}`;
+
 export function createPaymentGateway(deps: {
   operations: OperationRepository;
   allocations: AllocationRepository;
+  ledger: LedgerRepository;
+  payments: PaymentRepository;
   tasks: TaskService;
   intents: IntentService;
   reviews: ReviewService;
@@ -198,17 +202,29 @@ export function createPaymentGateway(deps: {
   transport: X402Transport;
   policy: Policy;
   jev: JevClient;
-  /** Tests inject one until member 3's offer selection exists. */
-  selectOffer?: (paymentRequired: X402PaymentRequired) => SelectedOffer | undefined;
+  /** Undefined when SPONSOR_PRIVATE_KEY isn't set: every payment is refused (fail closed). */
+  signer: Signer | undefined;
+  chainReader: ChainReader;
+  /** Total the sponsor pool hands out over all users. */
+  poolLimit: bigint;
+  /** Tests may swap the offer selection; defaults to the supported x402 profile. */
+  selectOffer?: (
+    paymentRequired: X402PaymentRequired,
+    requestedUrl: string,
+  ) => SelectedOffer | undefined;
+  settlementChecks?: SettlementChecks;
   now?: () => Date;
 }): PaymentGateway {
   const now = deps.now ?? (() => new Date());
-  const selectOffer = deps.selectOffer ?? placeholderSelectOffer;
+  const selectOffer = deps.selectOffer ?? selectSupportedOffer;
+  const checks = deps.settlementChecks ?? DEFAULT_SETTLEMENT_CHECKS;
 
   function track(op: OperationRecord): Run {
     let state = op.state;
     return {
       id: op.id,
+      taskId: op.taskId,
+      userId: op.userId,
       url: op.url,
       get state() {
         return state;
@@ -231,9 +247,20 @@ export function createPaymentGateway(deps: {
       message: `Blocked (${reason}): ${detail}. Nothing was paid.`,
     });
 
+  /** Refuses before anything was reserved: blocked, or closed when resuming an approved review. */
+  function refuse(run: Run, reason: VerdictReason, detail: string, extra: OperationPatch = {}) {
+    if (run.state !== 'awaiting_review') return block(run, reason, detail, extra);
+    run.move('closed', {
+      ...extra,
+      verdict: 'BLOCK',
+      reason,
+      message: `Closed after review: ${detail}. Nothing was paid.`,
+    });
+  }
+
   /**
-   * Fail closed: blocked before the authorization was issued, closed when resuming a review
-   * failed before reserving, unknown (counts as spent) after issuing.
+   * Fail closed: blocked before the authorization was issued (releasing any reservation), closed
+   * when resuming a review failed before reserving, unknown (counts as spent) after issuing.
    */
   function fail(run: Run, err: unknown) {
     if (err instanceof ConcurrentChangeError) return;
@@ -241,7 +268,12 @@ export function createPaymentGateway(deps: {
     if (!target) throw err;
     if (!(err instanceof NotImplementedError)) console.error(`Operation ${run.id} failed:`, err);
     const cause = err instanceof NotImplementedError ? err.message : 'Internal error';
-    if (target === 'blocked') return block(run, 'internal_error', cause);
+    if (target === 'blocked') {
+      return deps.transaction(() => {
+        deps.ledger.release(run.id, now().toISOString());
+        block(run, 'internal_error', cause);
+      });
+    }
     if (target === 'closed') return run.move('closed', { message: `${cause}. Nothing was paid.` });
     run.move('unknown', {
       message: `${cause}. The payment outcome is unknown and counts as spent; do not retry.`,
@@ -274,18 +306,27 @@ export function createPaymentGateway(deps: {
     if (!screenInput.success || screenInput.queries.length === 0) {
       return refused('unsupported_offer', 'the payment requirements could not be read');
     }
-    const selected = selectOffer(result.paymentRequired);
+    const selected = selectOffer(result.paymentRequired, request.url);
     if (!selected) {
       return refused('unsupported_offer', 'no payment option matches exact/Base Sepolia/USDC');
     }
     return { kind: 'offer', selected, screenState: toScreenState(screenInput.queries[0]!) };
   }
 
+  /** The user's purchases that reserved or spent money; the ledger decides what still counts. */
+  const purchasesOf = (userId: UserId): Purchase[] =>
+    deps.operations.listByUser(userId, {}).flatMap((op) => {
+      const entry = op.offer ? deps.ledger.findByOperation(op.id) : undefined;
+      return op.offer && entry && entry.state !== 'released'
+        ? [{ taskId: op.taskId, payTo: op.offer.payTo, amount: entry.amount }]
+        : [];
+    });
+
   const policyInput = (agent: AgentContext, task: Task, offer: NormalizedOffer) => ({
     offer,
     intent: deps.intents.getForUser(agent.userId, task.intentId),
     task,
-    purchases: purchasesOf(deps.operations.listByUser(agent.userId, {})),
+    purchases: purchasesOf(agent.userId),
     allocation: deps.allocations.findAmount(agent.userId) ?? 0n,
   });
 
@@ -336,7 +377,7 @@ export function createPaymentGateway(deps: {
       });
       return undefined;
     }
-    return executePayment(run, request, fetched.selected);
+    return executePayment(run, request, fetched.selected, { reason: decision.reason });
   }
 
   /**
@@ -370,7 +411,176 @@ export function createPaymentGateway(deps: {
       close(policy.detail, { verdict: 'BLOCK', reason: policy.reason });
       return undefined;
     }
-    return executePayment(run, request, fetched.selected);
+    // The review's reason stays on the operation: it says why the user was asked.
+    return executePayment(run, request, fetched.selected, {});
+  }
+
+  /**
+   * After ALLOW or an approved review, in the order the invariants require: reserve atomically,
+   * sign, persist the authorization as `issued` (spent from then on), and only then send it.
+   */
+  async function executePayment(
+    run: Run,
+    request: X402Request,
+    { offer, requirements }: SelectedOffer,
+    allowed: OperationPatch,
+  ): Promise<Delivery | undefined> {
+    const { signer } = deps;
+    if (!signer) {
+      refuse(run, 'internal_error', 'payments are not configured on this gateway', { offer });
+      return undefined;
+    }
+    const amount = BigInt(offer.amount);
+
+    // The reservation and the state change commit together or not at all.
+    const reservation = deps.transaction(() => {
+      const reserved = deps.ledger.reserve(
+        {
+          operationId: run.id,
+          userId: run.userId,
+          taskId: run.taskId,
+          amount,
+          poolLimit: deps.poolLimit,
+          at: now().toISOString(),
+        },
+        checkReservation,
+      );
+      if (!reserved.ok) return reserved;
+      if (!reserved.created)
+        throw new ConcurrentChangeError(`Operation ${run.id} is already paying`);
+      run.move('reserved', {
+        ...allowed,
+        verdict: 'ALLOW',
+        offer,
+        message: `Reserved ${formatUsdc(amount)} USDC; paying the merchant.`,
+      });
+      return reserved;
+    });
+    if (!reservation.ok) {
+      const detail = RESERVATION_DETAIL[reservation.reason];
+      refuse(run, toVerdictReason(reservation.reason), detail, { offer });
+      return undefined;
+    }
+
+    const signed = await signer.signPayment({
+      operation: { id: run.id, url: run.url, state: 'reserved', verdict: 'ALLOW', offer },
+      reservation: { operationId: run.id, state: 'reserved', amount },
+      requirements,
+    });
+    if (!signed.ok) {
+      deps.transaction(() => {
+        deps.ledger.release(run.id, now().toISOString());
+        block(
+          run,
+          signed.reason === 'unsupported_offer' ? 'unsupported_offer' : 'internal_error',
+          `the payment could not be signed (${signed.reason})`,
+        );
+      });
+      return undefined;
+    }
+    run.move('prepared');
+
+    // Persisted before it leaves the gateway: after a crash we still know what may have been paid.
+    const paymentSignature = encodePaymentSignature(signed.paymentPayload);
+    const { authorization } = signed.paymentPayload.payload;
+    deps.transaction(() => {
+      const at = now().toISOString();
+      deps.payments.insert({
+        operationId: run.id,
+        payer: authorization.from,
+        recipient: authorization.to,
+        token: requirements.asset,
+        amount,
+        chainId: SIGNER_PROFILE.chainId,
+        nonce: authorization.nonce,
+        validBefore: authorization.validBefore,
+        paymentSignature,
+        txHash: null,
+        createdAt: at,
+        updatedAt: at,
+      });
+      if (!deps.ledger.markSpent(run.id, at)) throw new Error(`No reservation for ${run.id}`);
+      run.move('issued', {
+        message: `Paying ${paid(offer)}; the amount counts as spent from now on.`,
+      });
+    });
+
+    return settle(run, offer, await deps.transport.fetchWithPayment(request, paymentSignature));
+  }
+
+  /** The merchant's claim is not proof: only a settlement ChainReader verifies counts. */
+  async function settle(
+    run: Run,
+    offer: NormalizedOffer,
+    result: X402TransportResult,
+  ): Promise<Delivery | undefined> {
+    const unknown = (detail: string) => {
+      run.move('unknown', {
+        message: `${detail}. The payment counts as spent until reconciliation settles it; do not retry.`,
+      });
+      return undefined;
+    };
+    if (result.kind === 'transport_error' || result.kind === 'invalid_request') {
+      return unknown(`The paid request to the merchant failed (${result.reason})`);
+    }
+    const claim = result.paymentResponse;
+    const txHash = claim.status === 'valid' && claim.value.success ? claim.value.transaction : '';
+    if (!TxHashSchema.safeParse(txHash).success) {
+      return unknown(`The merchant did not report a settlement (HTTP ${result.response.status})`);
+    }
+    deps.transaction(() => {
+      deps.payments.setTxHash(run.id, txHash, now().toISOString());
+      run.move('submitted', { message: `The merchant reported transaction ${txHash}.` });
+    });
+
+    const verification = await verifySettlement(run.id, txHash);
+    if (verification.status !== 'settled') {
+      return unknown(
+        `Transaction ${txHash} could not be verified on chain (${verification.reason})`,
+      );
+    }
+    run.move('settled', { settlement: verification.settlement });
+
+    if (result.kind !== 'content') {
+      run.move('delivery_failed', {
+        message: `Paid ${paid(offer)} (verified on chain), but the merchant returned no content (HTTP ${result.response.status}). The payment counts as spent; do not buy it again.`,
+      });
+      return undefined;
+    }
+    await screenDelivery(result);
+    run.move('delivered', { message: `Paid ${paid(offer)}; settlement verified on chain.` });
+    return deliveryOf(result.response);
+  }
+
+  /** Token, amount, payer, recipient and nonce come from the persisted authorization. */
+  async function verifySettlement(
+    operationId: OperationId,
+    txHash: string,
+  ): Promise<PaymentVerification> {
+    const payment = deps.payments.findByOperation(operationId);
+    if (!payment) throw new Error(`No persisted payment for ${operationId}`);
+    const verify = () =>
+      deps.chainReader.verifyPayment({
+        txHash,
+        chainId: payment.chainId,
+        token: payment.token,
+        payer: payment.payer,
+        recipient: payment.recipient,
+        amount: payment.amount,
+        authorizationNonce: payment.nonce,
+      });
+    let verification = await verify();
+    for (
+      let attempt = 1;
+      attempt < checks.attempts &&
+      verification.status === 'unknown' &&
+      TRANSIENT.has(verification.reason);
+      attempt++
+    ) {
+      await sleep(checks.delayMs);
+      verification = await verify();
+    }
+    return verification;
   }
 
   /** Runs one step on the operation and returns what the agent gets. */
@@ -464,5 +674,29 @@ export function createPaymentGateway(deps: {
     listOperations: (userId, filter) => deps.operations.listByUser(userId, filter).map(toOperation),
 
     getOperation: (userId, operationId) => toOperation(owned(userId, operationId)),
+
+    recoverInterrupted() {
+      const interrupted = deps.operations.listByStates(IN_FLIGHT);
+      for (const op of interrupted) {
+        const run = track(op);
+        try {
+          deps.transaction(() => {
+            const at = now().toISOString();
+            if (canTransition(run.state, 'blocked')) {
+              deps.ledger.release(run.id, at);
+              block(run, 'internal_error', 'the gateway restarted before paying');
+            } else {
+              run.move('unknown', {
+                message:
+                  'The gateway restarted while paying. The payment counts as spent until reconciliation settles it; do not retry.',
+              });
+            }
+          });
+        } catch (err) {
+          if (!(err instanceof ConcurrentChangeError)) throw err;
+        }
+      }
+      return interrupted.length;
+    },
   };
 }

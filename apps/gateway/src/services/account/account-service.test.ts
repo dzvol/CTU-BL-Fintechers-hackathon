@@ -7,6 +7,7 @@ function setup() {
   const accounts = createAccountService({
     users: store.users,
     allocations: store.allocations,
+    ledger: store.ledger,
     transaction: store.transaction,
     defaultAllocation: 2_000_000n,
   });
@@ -22,7 +23,9 @@ describe('AccountService.loginWithGoogle', () => {
     expect(accounts.getProfile(id)).toMatchObject({
       email: 'a@example.com',
       allocation: '2000000',
+      balance: { spent: '0', reserved: '0', remaining: '2000000' },
     });
+    expect(accounts.fundsLeft(id)).toBe(2_000_000n);
   });
 
   it('reuses the user on later logins, refreshing the profile without a new allocation', () => {

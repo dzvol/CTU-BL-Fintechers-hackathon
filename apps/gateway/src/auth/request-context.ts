@@ -1,7 +1,8 @@
 import type { ApiError } from '@semanticauth/contracts';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie } from 'hono/cookie';
-import type { ApiKeyService } from '../services/account/api-key-service';
+import type { AccountService } from '../services/account/account-service';
+import { AllocationExhaustedError, type ApiKeyService } from '../services/account/api-key-service';
 import type { AgentContext, UserContext } from '../services/context';
 import type { RateLimiter } from './rate-limit';
 import type { SessionService } from './session-service';
@@ -30,11 +31,12 @@ export function requireUserSession(sessions: SessionService): MiddlewareHandler<
 }
 
 /**
- * Agents: requires `Authorization: Bearer <api key>` with a non-revoked key and sets `c.var.auth`.
- * Rate-limited per key.
+ * Agents: requires `Authorization: Bearer <api key>` with a non-revoked key of a user who still
+ * has funds left, and sets `c.var.auth`. Rate-limited per key.
  */
 export function requireAgentKey(
   apiKeys: ApiKeyService,
+  accounts: Pick<AccountService, 'fundsLeft'>,
   rateLimiter: RateLimiter,
 ): MiddlewareHandler<AgentEnv> {
   return async (c, next) => {
@@ -42,6 +44,10 @@ export function requireAgentKey(
     const key = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
     const agent = key ? apiKeys.authenticate(key) : undefined;
     if (!agent) return unauthorized(c, 'invalid_api_key', 'Missing, invalid or revoked API key');
+    if (accounts.fundsLeft(agent.userId) <= 0n) {
+      const { code, message } = new AllocationExhaustedError();
+      return c.json<ApiError>({ error: { code, message } }, 403);
+    }
     if (!rateLimiter.hit(agent.apiKeyId)) {
       return c.json<ApiError>(
         { error: { code: 'rate_limited', message: 'Too many requests, slow down' } },

@@ -99,6 +99,7 @@ async function runScenarios() {
 
   log(`\nCalling paid_fetch on ${scenarios.length} scenarios at ${merchantsUrl} ...`);
   const rows = [];
+  const settled: { path: string; explorerUrl: string }[] = [];
   const underReview: { path: string; url: string; operationId: string }[] = [];
   for (const scenario of scenarios) {
     const url = new URL(scenario.path, merchantsUrl).toString();
@@ -112,6 +113,9 @@ async function runScenarios() {
         verdict: result.verdict ?? '',
         reason: result.reason ?? '',
       });
+      if (result.settlement) {
+        settled.push({ path: scenario.path, explorerUrl: result.settlement.explorerUrl });
+      }
       if (result.state === 'awaiting_review') {
         underReview.push({ path: scenario.path, url, operationId: result.operationId });
       }
@@ -124,6 +128,7 @@ async function runScenarios() {
     }
   }
   console.table(rows);
+  for (const { path, explorerUrl } of settled) log(`${path} paid: ${explorerUrl}`);
   log('\nFull messages are on the operations in the dashboard API (GET /api/operations).');
   for (const review of underReview) await resumeReview(review);
 }
@@ -141,6 +146,7 @@ async function resumeReview(review: { path: string; url: string; operationId: st
   if (check.status !== 'approved') return;
   const result = await call('paid_fetch', { url: review.url });
   log(`paid_fetch again → ${result.state}: ${result.message}`);
+  if (result.settlement) log(`Transaction: ${result.settlement.explorerUrl}`);
 }
 
 async function main() {

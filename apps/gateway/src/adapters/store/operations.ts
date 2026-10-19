@@ -35,6 +35,8 @@ export interface OperationRepository {
   findById(id: OperationId): OperationRecord | undefined;
   findByTaskAndUrl(taskId: TaskId, url: string): OperationRecord | undefined;
   listByUser(userId: UserId, filter: { taskId?: TaskId }): OperationRecord[];
+  /** Every operation in one of `states`, oldest first (recovery after a restart). */
+  listByStates(states: readonly OperationState[]): OperationRecord[];
   /** Compare-and-set: moves `from` → `to`; false if the operation was no longer in `from`. */
   transition(
     id: OperationId,
@@ -94,6 +96,9 @@ export function createOperationRepository(db: Db): OperationRepository {
   const byUserAndTask = db.prepare<[string, string], OperationRow>(
     'SELECT * FROM operations WHERE user_id = ? AND task_id = ? ORDER BY created_at DESC',
   );
+  const byStates = db.prepare<[string], OperationRow>(
+    'SELECT * FROM operations WHERE state IN (SELECT value FROM json_each(?)) ORDER BY created_at',
+  );
   // COALESCE keeps fields the patch doesn't set.
   const transition = db.prepare(
     `UPDATE operations SET
@@ -117,6 +122,7 @@ export function createOperationRepository(db: Db): OperationRepository {
     findByTaskAndUrl: (taskId, url) => one(byTaskAndUrl.get(taskId, url)),
     listByUser: (userId, { taskId }) =>
       (taskId ? byUserAndTask.all(userId, taskId) : byUser.all(userId)).map(toRecord),
+    listByStates: (states) => byStates.all(JSON.stringify(states)).map(toRecord),
     transition: (id, from, to, patch, at) =>
       transition.run({
         id,

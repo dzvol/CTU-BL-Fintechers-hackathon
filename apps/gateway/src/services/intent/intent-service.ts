@@ -15,11 +15,12 @@ import {
 } from '@semanticauth/contracts';
 import { z } from 'zod';
 import type {
-  AllocationRepository,
   IntentRecord,
   IntentRepository,
+  LedgerRepository,
   Transaction,
 } from '../../adapters/store';
+import { remaining } from '../../domain/ledger';
 import type { AgentContext } from '../context';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../errors';
 import type { TaskService } from '../task/task-service';
@@ -78,7 +79,8 @@ const toIntent = (record: IntentRecord): Intent => ({
 
 export function createIntentService(deps: {
   intents: IntentRepository;
-  allocations: AllocationRepository;
+  /** What the user's allocation still has left, after spent and reserved payments. */
+  ledger: Pick<LedgerRepository, 'userBalance'>;
   tasks: TaskService;
   transaction: Transaction;
   /** Dashboard where the user approves intents. */
@@ -111,11 +113,10 @@ export function createIntentService(deps: {
     if (maxPerPurchase > budget) {
       throw new BadRequestError('maxPerPurchaseUsdc must not exceed budgetUsdc');
     }
-    // TODO(ledger): compare with the remaining allocation instead of the total.
-    const allocation = deps.allocations.findAmount(userId) ?? 0n;
-    if (budget > allocation) {
+    const left = remaining(deps.ledger.userBalance(userId));
+    if (budget > left) {
       throw new BadRequestError(
-        `budgetUsdc exceeds the user's allocation of ${formatUsdc(allocation)} USDC`,
+        `budgetUsdc exceeds the user's remaining allocation of ${formatUsdc(left)} USDC`,
       );
     }
     return { budget, maxPerPurchase };

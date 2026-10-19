@@ -2,6 +2,7 @@ import type { IntentProposal } from '@semanticauth/contracts';
 import { describe, expect, it } from 'vitest';
 import { fakeJev } from '../../../test/fake-jev';
 import { fakeMerchantTransport } from '../../../test/fake-merchant';
+import { fakePayments } from '../../../test/fake-payments';
 import { createStore, openDatabase } from '../../adapters/store';
 import { createServices } from '..';
 import type { AgentContext } from '../context';
@@ -25,6 +26,7 @@ function setup() {
     store: createStore(openDatabase(':memory:')),
     transport: fakeMerchantTransport(),
     jev: fakeJev(),
+    ...fakePayments(),
     userAllocation: 2_000_000n,
     webBaseUrl: 'http://dashboard.test',
     now: () => t,

@@ -8,16 +8,27 @@ import {
 } from '@semanticauth/contracts';
 import type { ApiKeyRecord, ApiKeyRepository, Transaction } from '../../adapters/store';
 import type { AgentContext } from '../context';
-import { ForbiddenError, NotFoundError } from '../errors';
+import { ForbiddenError, NotFoundError, ServiceError } from '../errors';
 
 const KEY_PREFIX = 'sa_';
+
+/** The user's sponsored allocation is used up: no new key, existing keys are refused. */
+export class AllocationExhaustedError extends ServiceError {
+  constructor() {
+    super(
+      403,
+      'allocation_exhausted',
+      'The sponsored allocation is used up; API keys stop working until it is raised',
+    );
+  }
+}
 /** "sa_" + 7 characters: enough to tell keys apart in the dashboard, useless for guessing. */
 const DISPLAY_PREFIX_LENGTH = 10;
 
 export interface ApiKeyService {
   /**
    * One active key per user: creating a key revokes the previous one. Returns the full key; it
-   * can't be retrieved again.
+   * can't be retrieved again. Refused once the user's allocation is used up.
    */
   create(userId: UserId, name: string): CreatedApiKey;
   list(userId: UserId): ApiKey[];
@@ -42,6 +53,8 @@ const toApiKey = (record: ApiKeyRecord): ApiKey => ({
 export function createApiKeyService(deps: {
   apiKeys: ApiKeyRepository;
   transaction: Transaction;
+  /** What the user can still spend; a key with nothing to spend is not handed out. */
+  fundsLeft: (userId: UserId) => bigint;
   /** Runs in the revoking transaction, e.g. to end the key's task and pending intent. */
   onRevoked?: (apiKeyId: ApiKeyId, at: string) => void;
   now?: () => Date;
@@ -58,6 +71,7 @@ export function createApiKeyService(deps: {
 
   return {
     create(userId, name) {
+      if (deps.fundsLeft(userId) <= 0n) throw new AllocationExhaustedError();
       const key = KEY_PREFIX + randomBytes(32).toString('base64url');
       const createdAt = now().toISOString();
       const record: ApiKeyRecord = {

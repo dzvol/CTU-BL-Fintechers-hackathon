@@ -35,7 +35,8 @@ describe('paid_fetch over MCP + operations in the dashboard', () => {
     });
     expect(result.isError).toBeFalsy();
     const operation = result.structuredContent as { operationId: string; state: string };
-    expect(operation).toMatchObject({ state: 'blocked', reason: 'internal_error' });
+    // No JEV_API_KEY in the test config: the offer can't be checked, so it is blocked.
+    expect(operation).toMatchObject({ state: 'blocked', reason: 'jev_unavailable' });
 
     const list = await asUser(app, sessionCookie, '/api/operations');
     expect(((await list.json()) as { items: unknown[] }).items).toMatchObject([

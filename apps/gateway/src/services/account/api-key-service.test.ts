@@ -8,13 +8,18 @@ function setup() {
   const accounts = createAccountService({
     users: store.users,
     allocations: store.allocations,
+    ledger: store.ledger,
     transaction: store.transaction,
-    defaultAllocation: 0n,
+    defaultAllocation: 5_000_000n,
   });
-  const apiKeys = createApiKeyService({ apiKeys: store.apiKeys, transaction: store.transaction });
+  const apiKeys = createApiKeyService({
+    apiKeys: store.apiKeys,
+    fundsLeft: accounts.fundsLeft,
+    transaction: store.transaction,
+  });
   const alice = accounts.loginWithGoogle({ googleSub: 'alice', email: 'alice@example.com' });
   const bob = accounts.loginWithGoogle({ googleSub: 'bob', email: 'bob@example.com' });
-  return { apiKeys, alice, bob };
+  return { store, apiKeys, alice, bob };
 }
 
 describe('ApiKeyService', () => {
@@ -60,5 +65,17 @@ describe('ApiKeyService', () => {
     expect(apiKeys.authenticate(fresh.key)).toMatchObject({ apiKeyId: fresh.apiKey.id });
     expect(apiKeys.authenticate(bobs.key)).toMatchObject({ userId: bob });
     expect(apiKeys.list(alice).filter((k) => !k.revokedAt)).toHaveLength(1);
+  });
+
+  it('refuses a new key once the allocation is used up', () => {
+    const { store, alice } = setup();
+    const apiKeys = createApiKeyService({
+      apiKeys: store.apiKeys,
+      fundsLeft: () => 0n,
+      transaction: store.transaction,
+    });
+    expect(() => apiKeys.create(alice, 'laptop')).toThrow(
+      expect.objectContaining({ status: 403, code: 'allocation_exhausted' }),
+    );
   });
 });

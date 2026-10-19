@@ -10,6 +10,18 @@ export const MeSchema = z.object({
   picture: z.url().optional(),
   /** Sponsored allocation assigned on first login. */
   allocation: AmountSchema,
+  /**
+   * What the allocation has paid for and what is left. Optional only for compatibility; the
+   * gateway always sends it. With `remaining` at 0 the user's API keys stop working.
+   */
+  balance: z
+    .object({
+      spent: AmountSchema,
+      /** Held for payments in progress. */
+      reserved: AmountSchema,
+      remaining: AmountSchema,
+    })
+    .optional(),
 });
 export type Me = z.infer<typeof MeSchema>;
 
