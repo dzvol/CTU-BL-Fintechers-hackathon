@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import { parseUsdc, UsdcDecimalSchema } from '@semanticauth/contracts';
 import { z } from 'zod';
+import { loadChainReaderConfig, type ChainReaderConfig } from './adapters/chain-reader';
 import type { JevConfig } from './adapters/jev/jev-client';
+import { loadSignerConfig, type SignerConfig } from './adapters/signer';
 
 const optional = z
   .string()
@@ -22,7 +24,10 @@ const EnvSchema = z.object({
   SESSION_SECRET: optional.pipe(
     z.string().min(32, 'generate one with: openssl rand -hex 32').optional(),
   ),
-  USER_ALLOCATION_USDC: UsdcDecimalSchema.default('2'),
+  USER_ALLOCATION_USDC: UsdcDecimalSchema.default('5'),
+  SPONSOR_POOL_USDC: UsdcDecimalSchema.default('20'),
+  // Only whether it is set; the Signer reads the value itself and nothing else may.
+  SPONSOR_PRIVATE_KEY: optional,
   X402_ALLOW_HTTP_LOCALHOST: z.stringbool().default(false),
   JEV_API_URL: optional.pipe(z.url().optional()),
   JEV_API_KEY: optional,
@@ -52,6 +57,15 @@ export interface Config {
   x402AllowHttpLocalhost: boolean;
   /** Undefined without JEV_API_KEY; every paid offer is then blocked (fail closed). */
   jev: JevConfig | undefined;
+  payments: PaymentsConfig;
+}
+
+export interface PaymentsConfig {
+  /** Undefined without SPONSOR_PRIVATE_KEY; every paid offer is then blocked (fail closed). */
+  signer: SignerConfig | undefined;
+  chainReader: ChainReaderConfig;
+  /** Total the sponsor pool hands out over all users (ledger reservation limit). */
+  poolLimit: bigint;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -76,6 +90,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   if (!google) console.warn('GOOGLE_* env not set: Google login is disabled');
   if (!e.JEV_API_KEY) console.warn('JEV_API_KEY not set: every paid offer is blocked by Jev');
+  if (!e.SPONSOR_PRIVATE_KEY) {
+    console.warn('SPONSOR_PRIVATE_KEY not set: every paid offer is blocked, nothing can be paid');
+  }
   if (!e.SESSION_SECRET) console.warn('SESSION_SECRET not set: using a random one per process');
 
   return {
@@ -96,5 +113,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
           timeoutMs: e.JEV_TIMEOUT_MS,
         }
       : undefined,
+    payments: {
+      signer: e.SPONSOR_PRIVATE_KEY ? loadSignerConfig(env) : undefined,
+      chainReader: loadChainReaderConfig(env),
+      poolLimit: parseUsdc(e.SPONSOR_POOL_USDC),
+    },
   };
 }

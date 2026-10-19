@@ -2,6 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { Hono } from 'hono';
 import { type AgentEnv, requireAgentKey } from '../auth/request-context';
 import type { RateLimiter } from '../auth/rate-limit';
+import type { AccountService } from '../services/account/account-service';
 import type { ApiKeyService } from '../services/account/api-key-service';
 import { apiError } from '../api/errors';
 import { createMcpServer, type McpDeps } from './mcp-server';
@@ -11,10 +12,10 @@ import { createMcpServer, type McpDeps } from './mcp-server';
  * no MCP sessions to track (one API key = one agent run).
  */
 export function createMcpRoutes(
-  deps: McpDeps & { apiKeys: ApiKeyService; rateLimiter: RateLimiter },
+  deps: McpDeps & { accounts: AccountService; apiKeys: ApiKeyService; rateLimiter: RateLimiter },
 ) {
   const app = new Hono<AgentEnv>();
-  app.use('*', requireAgentKey(deps.apiKeys, deps.rateLimiter));
+  app.use('*', requireAgentKey(deps.apiKeys, deps.accounts, deps.rateLimiter));
 
   app.post('/', async (c) => {
     const server = createMcpServer(c.var.auth, deps);

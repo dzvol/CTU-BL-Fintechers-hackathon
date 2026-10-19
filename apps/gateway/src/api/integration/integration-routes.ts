@@ -13,7 +13,7 @@ export function createIntegrationRoutes(deps: {
   rateLimiter: RateLimiter;
 }) {
   const app = new Hono<AgentEnv>();
-  app.use('*', requireAgentKey(deps.apiKeys, deps.rateLimiter));
+  app.use('*', requireAgentKey(deps.apiKeys, deps.accounts, deps.rateLimiter));
 
   app.get('/whoami', (c) => {
     const { userId, apiKeyId } = c.var.auth;

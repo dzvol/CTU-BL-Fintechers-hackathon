@@ -1,8 +1,17 @@
 import type { IntentProposal } from '@semanticauth/contracts';
 import { describe, expect, it } from 'vitest';
-import { fakeJev } from '../../../test/fake-jev';
-import { fakeMerchantTransport, INJECTION, MERCHANT } from '../../../test/fake-merchant';
-import { createStore, openDatabase } from '../../adapters/store';
+import { c, fakeJev } from '../../../test/fake-jev';
+import {
+  createFakeMerchant,
+  INJECTION,
+  MERCHANT,
+  MERCHANT_PAY_TO,
+  PAID_CONTENT,
+  SETTLEMENT_TX,
+} from '../../../test/fake-merchant';
+import { fakeChainReader, fakePayments } from '../../../test/fake-payments';
+import type { ChainReader } from '../../adapters/chain-reader';
+import { createStore, openDatabase, type OperationRecord } from '../../adapters/store';
 import { createServices } from '..';
 import type { AgentContext } from '../context';
 
@@ -17,14 +26,32 @@ const proposal: IntentProposal = {
 };
 const PAID = `${MERCHANT}/paid`;
 
-function setup() {
-  const jev = fakeJev();
+function setup(
+  options: {
+    chainReader?: ChainReader;
+    payments?: Partial<ReturnType<typeof fakePayments>>;
+    jev?: ReturnType<typeof fakeJev>;
+  } = {},
+) {
+  const jev = options.jev ?? fakeJev();
+  const store = createStore(openDatabase(':memory:'));
+  // What the database held at the moment the payment header reached the merchant.
+  const atPayment: { operation?: OperationRecord; payment?: unknown }[] = [];
+  const merchant = createFakeMerchant({
+    onPayment: () => {
+      const operation = store.operations.listByUser(alice.userId, {})[0];
+      atPayment.push({ operation, payment: store.payments.findByOperation(operation!.id) });
+    },
+  });
+  const chainReader = options.chainReader ?? fakeChainReader();
   const services = createServices({
-    store: createStore(openDatabase(':memory:')),
-    transport: fakeMerchantTransport(),
+    store,
+    transport: merchant.transport,
     userAllocation: 2_000_000n,
     webBaseUrl: 'http://dashboard.test',
     jev,
+    ...fakePayments(chainReader),
+    ...options.payments,
   });
   const agentOf = (googleSub: string): AgentContext => {
     const userId = services.accounts.loginWithGoogle({
@@ -37,7 +64,18 @@ function setup() {
   const startTask = (agent: AgentContext) =>
     services.intents.approve(agent.userId, services.intents.submit(agent, proposal).intentId)
       .taskId!;
-  return { ...services, jev, alice: agentOf('alice'), bob: agentOf('bob'), startTask };
+  const alice = agentOf('alice');
+  return {
+    ...services,
+    store,
+    jev,
+    merchant,
+    chainReader,
+    atPayment,
+    alice,
+    bob: agentOf('bob'),
+    startTask,
+  };
 }
 
 describe('PaymentGateway.paidFetch', () => {
@@ -50,7 +88,7 @@ describe('PaymentGateway.paidFetch', () => {
   });
 
   it('delivers free content without payment', async () => {
-    const { payments, alice, startTask } = setup();
+    const { payments, alice, startTask, merchant } = setup();
     startTask(alice);
 
     const result = await payments.paidFetch(alice, { url: `${MERCHANT}/free` });
@@ -61,34 +99,20 @@ describe('PaymentGateway.paidFetch', () => {
       contentType: 'application/json',
     });
     expect(JSON.parse(result.content!)).toEqual({ headlines: ['BTC up 2%'] });
-  });
-
-  it('reads a 402 offer, then blocks fail-closed until offer selection exists', async () => {
-    const { payments, alice, startTask, jev } = setup();
-    const taskId = startTask(alice);
-
-    const result = await payments.paidFetch(alice, { url: PAID });
-    expect(result).toMatchObject({ state: 'blocked', verdict: 'BLOCK', reason: 'internal_error' });
-    expect(result.message).toContain('Offer selection');
-    expect(result.message).toContain('Nothing was paid');
-    // Without a NormalizedOffer there is nothing to evaluate yet.
-    expect(jev.screen).not.toHaveBeenCalled();
-    expect(result.content).toBeUndefined();
-
-    expect(payments.listOperations(alice.userId, { taskId })).toMatchObject([
-      { id: result.operationId, url: PAID, state: 'blocked' },
-    ]);
+    expect(merchant.payments).toHaveLength(0);
   });
 
   it.each([
     ['broken-402', 'unsupported_offer'],
+    ['paid-mainnet', 'unsupported_offer'],
     ['error', 'merchant_error'],
     ['down', 'merchant_error'],
-  ])('blocks /%s with %s', async (path, reason) => {
-    const { payments, alice, startTask } = setup();
+  ])('blocks /%s with %s before asking Jev', async (path, reason) => {
+    const { payments, alice, startTask, jev } = setup();
     startTask(alice);
     const result = await payments.paidFetch(alice, { url: `${MERCHANT}/${path}` });
     expect(result).toMatchObject({ state: 'blocked', reason });
+    expect(jev.screen).not.toHaveBeenCalled();
   });
 
   it('refuses plain HTTP merchants', async () => {
@@ -100,35 +124,13 @@ describe('PaymentGateway.paidFetch', () => {
   });
 
   it('never hands the 402 body (merchant text) to the agent', async () => {
-    const { payments, alice, startTask } = setup();
+    const { payments, alice, startTask } = setup({
+      jev: fakeJev({ instruction_override: 0.95 }),
+    });
     startTask(alice);
     const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'blocked', reason: 'prompt_injection' });
     expect(JSON.stringify(result)).not.toContain(INJECTION);
-  });
-
-  it('is idempotent per task and URL', async () => {
-    const { payments, alice, startTask } = setup();
-    startTask(alice);
-
-    const first = await payments.paidFetch(alice, { url: PAID });
-    const again = await payments.paidFetch(alice, { url: 'HTTPS://Merchant.Test/paid' });
-    expect(again.operationId).toBe(first.operationId);
-    expect(again.message).toContain('already requested');
-
-    const other = await payments.paidFetch(alice, { url: `${PAID}?page=2` });
-    expect(other.operationId).not.toBe(first.operationId);
-    expect(payments.listOperations(alice.userId, {})).toHaveLength(2);
-  });
-
-  it('starts fresh in a new task', async () => {
-    const { payments, tasks, alice, startTask } = setup();
-    const firstTask = startTask(alice);
-    const first = await payments.paidFetch(alice, { url: PAID });
-
-    tasks.close(alice.userId, firstTask);
-    startTask(alice);
-    const second = await payments.paidFetch(alice, { url: PAID });
-    expect(second.operationId).not.toBe(first.operationId);
   });
 
   it("forbids reading another user's operation", async () => {
@@ -139,6 +141,234 @@ describe('PaymentGateway.paidFetch', () => {
     expect(() => payments.getOperation(bob.userId, operationId)).toThrow(
       expect.objectContaining({ status: 403 }),
     );
-    expect(payments.getOperation(alice.userId, operationId).state).toBe('blocked');
+    expect(payments.getOperation(alice.userId, operationId).state).toBe('delivered');
+  });
+});
+
+describe('PaymentGateway payment execution', () => {
+  it('pays an allowed offer, verifies it on chain and delivers the content', async () => {
+    const { payments, tasks, store, alice, startTask, merchant, chainReader } = setup();
+    const taskId = startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({
+      state: 'delivered',
+      verdict: 'ALLOW',
+      reason: 'within_intent',
+      settlement: {
+        txHash: SETTLEMENT_TX,
+        explorerUrl: `https://sepolia.basescan.org/tx/${SETTLEMENT_TX}`,
+      },
+    });
+    expect(JSON.parse(result.content!)).toEqual(PAID_CONTENT);
+    expect(result.message).toContain(`Paid 0.01 USDC to ${MERCHANT_PAY_TO}`);
+
+    expect(merchant.payments).toHaveLength(1);
+    const payment = store.payments.findByOperation(result.operationId)!;
+    expect(payment).toMatchObject({
+      recipient: MERCHANT_PAY_TO,
+      amount: 10_000n,
+      txHash: SETTLEMENT_TX,
+      paymentSignature: merchant.payments[0],
+    });
+    // ChainReader checks what the gateway signed, not what the merchant claims.
+    expect(chainReader.verifyPayment).toHaveBeenCalledWith({
+      txHash: SETTLEMENT_TX,
+      chainId: 84532,
+      token: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+      payer: payment.payer,
+      recipient: MERCHANT_PAY_TO,
+      amount: 10_000n,
+      authorizationNonce: payment.nonce,
+    });
+    expect(store.ledger.findByOperation(result.operationId)?.state).toBe('spent');
+    expect(tasks.getForUser(alice.userId, taskId)).toMatchObject({ spent: '10000', reserved: '0' });
+  });
+
+  it('persists the authorization as issued and spent before it leaves the gateway', async () => {
+    const { payments, store, alice, startTask, atPayment, merchant } = setup();
+    startTask(alice);
+    const { operationId } = await payments.paidFetch(alice, { url: PAID });
+
+    expect(atPayment).toHaveLength(1);
+    expect(atPayment[0]!.operation?.state).toBe('issued');
+    expect(atPayment[0]!.payment).toMatchObject({ paymentSignature: merchant.payments[0] });
+    expect(store.ledger.findByOperation(operationId)?.state).toBe('spent');
+  });
+
+  it('never pays twice for a repeated request', async () => {
+    const { payments, alice, startTask, merchant } = setup();
+    startTask(alice);
+
+    const first = await payments.paidFetch(alice, { url: PAID });
+    const again = await payments.paidFetch(alice, { url: 'HTTPS://Merchant.Test/paid' });
+    expect(again).toMatchObject({ operationId: first.operationId, state: 'delivered' });
+    expect(again.message).toContain('already requested');
+    expect(merchant.payments).toHaveLength(1);
+  });
+
+  it('counts the payment toward the next Policy check', async () => {
+    const { payments, alice, startTask, jev } = setup();
+    startTask(alice);
+    await payments.paidFetch(alice, { url: PAID });
+    await payments.paidFetch(alice, { url: `${PAID}?page=2` });
+
+    const facts = jev.judge.mock.calls[1]![0].payment_facts_computed_by_code;
+    expect(facts.previous_purchases_for_task).toBe(
+      '1 purchase(s), 0.01 USDC in total, 1 of them to this recipient',
+    );
+  });
+
+  it('blocks without paying when the sponsor pool cannot cover the reservation', async () => {
+    const { payments, store, alice, startTask, merchant } = setup({
+      payments: { poolLimit: 5_000n },
+    });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'blocked', reason: 'policy_limit_exceeded' });
+    expect(result.message).toContain('sponsor pool');
+    expect(store.ledger.findByOperation(result.operationId)).toBeUndefined();
+    expect(merchant.payments).toHaveLength(0);
+  });
+
+  it('blocks without paying when no sponsor key is configured', async () => {
+    const { payments, store, alice, startTask, merchant } = setup({
+      payments: { signer: undefined },
+    });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'blocked', reason: 'internal_error' });
+    expect(result.message).toContain('not configured');
+    expect(store.ledger.findByOperation(result.operationId)).toBeUndefined();
+    expect(merchant.payments).toHaveLength(0);
+  });
+
+  it('releases the reservation when signing fails', async () => {
+    const { payments, store, alice, startTask, merchant } = setup({
+      payments: {
+        signer: {
+          address: '0x2222222222222222222222222222222222222222',
+          signPayment: async () => ({ ok: false, reason: 'signing_failed' }),
+        },
+      },
+    });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'blocked', reason: 'internal_error' });
+    expect(store.ledger.findByOperation(result.operationId)?.state).toBe('released');
+    expect(merchant.payments).toHaveLength(0);
+  });
+
+  it('settled without content: delivery_failed, counted as spent', async () => {
+    const { payments, store, alice, startTask } = setup();
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: `${MERCHANT}/paid-empty` });
+    expect(result).toMatchObject({
+      state: 'delivery_failed',
+      settlement: { txHash: SETTLEMENT_TX },
+    });
+    expect(result.content).toBeUndefined();
+    expect(result.message).toContain('do not buy it again');
+    expect(store.ledger.findByOperation(result.operationId)?.state).toBe('spent');
+  });
+
+  it('no settlement reported: unknown, counted as spent, content withheld', async () => {
+    const { payments, store, alice, startTask, chainReader } = setup();
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: `${MERCHANT}/paid-unconfirmed` });
+    expect(result).toMatchObject({ state: 'unknown', verdict: 'ALLOW' });
+    expect(result.content).toBeUndefined();
+    expect(result.message).toContain('do not retry');
+    expect(chainReader.verifyPayment).not.toHaveBeenCalled();
+    expect(store.ledger.findByOperation(result.operationId)?.state).toBe('spent');
+  });
+
+  it('reads the chain again while the transaction is not visible, then gives up as unknown', async () => {
+    const chainReader = fakeChainReader(() => ({
+      status: 'unknown',
+      reason: 'receipt_not_found',
+    }));
+    const { payments, store, alice, startTask } = setup({ chainReader });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'unknown' });
+    expect(result.settlement).toBeUndefined();
+    expect(result.message).toContain(SETTLEMENT_TX);
+    expect(chainReader.verifyPayment).toHaveBeenCalledTimes(3);
+    expect(store.payments.findByOperation(result.operationId)?.txHash).toBe(SETTLEMENT_TX);
+  });
+
+  it('does not trust a transaction that does not match the authorization', async () => {
+    const chainReader = fakeChainReader(() => ({ status: 'failed', reason: 'payment_mismatch' }));
+    const { payments, alice, startTask } = setup({ chainReader });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'unknown' });
+    expect(result.message).toContain('payment_mismatch');
+    expect(chainReader.verifyPayment).toHaveBeenCalledTimes(1);
+  });
+
+  it('a REVIEW reserves nothing and pays nothing', async () => {
+    const { payments, store, alice, startTask, merchant } = setup({
+      jev: fakeJev({ billing_basis: c('recurring_subscription', 0.9) }),
+    });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'awaiting_review', reason: 'subscription' });
+    expect(store.ledger.findByOperation(result.operationId)).toBeUndefined();
+    expect(merchant.payments).toHaveLength(0);
+  });
+});
+
+describe('PaymentGateway.recoverInterrupted', () => {
+  it('blocks what was not signed yet and keeps what may have been paid as spent', async () => {
+    const { payments, store, alice, startTask } = setup();
+    const taskId = startTask(alice);
+    const at = '2026-10-19T12:00:00.000Z';
+    const insert = (id: string, state: OperationRecord['state']) =>
+      store.operations.insert({
+        id,
+        taskId,
+        userId: alice.userId,
+        url: `${PAID}?${id}`,
+        state,
+        verdict: null,
+        reason: null,
+        offer: null,
+        settlement: null,
+        message: null,
+        createdAt: at,
+        updatedAt: at,
+      });
+    const reserve = (operationId: string) =>
+      store.ledger.reserve(
+        { operationId, userId: alice.userId, taskId, amount: 10_000n, poolLimit: 1_000_000n, at },
+        () => ({ ok: true }),
+      );
+    insert('op_reserved', 'reserved');
+    reserve('op_reserved');
+    insert('op_issued', 'issued');
+    reserve('op_issued');
+    store.ledger.markSpent('op_issued', at);
+    insert('op_done', 'delivered');
+
+    expect(payments.recoverInterrupted()).toBe(2);
+    expect(payments.getOperation(alice.userId, 'op_reserved')).toMatchObject({
+      state: 'blocked',
+      reason: 'internal_error',
+    });
+    expect(store.ledger.findByOperation('op_reserved')?.state).toBe('released');
+    expect(payments.getOperation(alice.userId, 'op_issued').state).toBe('unknown');
+    expect(store.ledger.findByOperation('op_issued')?.state).toBe('spent');
+    expect(payments.getOperation(alice.userId, 'op_done').state).toBe('delivered');
+    expect(payments.recoverInterrupted()).toBe(0);
   });
 });

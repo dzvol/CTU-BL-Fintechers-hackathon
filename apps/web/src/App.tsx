@@ -1,4 +1,4 @@
-import type { Intent, Me, Review, Task } from '@semanticauth/contracts';
+import { formatUsdc, type Intent, type Me, type Review, type Task } from '@semanticauth/contracts';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchMe, LOGIN_URL, logout } from './api/auth';
 import { approveIntent, fetchPendingIntent, rejectIntent } from './api/intents';
@@ -16,8 +16,9 @@ export function App() {
   const [error, setError] = useState<string>();
 
   const refresh = useCallback(() => {
-    Promise.all([fetchPendingIntent(), fetchActiveTask(), fetchPendingReviews()]).then(
-      ([pendingIntent, activeTask, pendingReviews]) => {
+    Promise.all([fetchMe(), fetchPendingIntent(), fetchActiveTask(), fetchPendingReviews()]).then(
+      ([profile, pendingIntent, activeTask, pendingReviews]) => {
+        setMe(profile);
         setIntent(pendingIntent);
         setTask(activeTask);
         setReviews(pendingReviews);
@@ -30,14 +31,16 @@ export function App() {
     fetchMe().then(setMe, () => setMe(null));
   }, []);
 
+  // Once per login; `refresh` itself replaces `me` with the current balance.
+  const signedIn = Boolean(me);
   useEffect(() => {
-    if (me) refresh();
-  }, [me, refresh]);
+    if (signedIn) refresh();
+  }, [signedIn, refresh]);
 
   if (me === undefined) return null;
   if (me === null) return <a href={LOGIN_URL}>Sign in with Google</a>;
 
-  /** Runs an action, shows its error if any, then reloads intent, task and reviews. */
+  /** Runs an action, shows its error if any, then reloads balance, intent, task and reviews. */
   const act = (action: () => Promise<unknown>) => () => {
     setError(undefined);
     action().then(refresh, (err: Error) => setError(err.message));
@@ -46,6 +49,12 @@ export function App() {
   return (
     <div>
       <p>{me.email}</p>
+      {me.balance && (
+        <p>
+          Remaining: {formatUsdc(me.balance.remaining)} of {formatUsdc(me.allocation)} USDC
+          {me.balance.remaining === '0' && ' (used up: API keys no longer work)'}
+        </p>
+      )}
       <button
         onClick={act(() =>
           createApiKey(`key ${new Date().toISOString()}`).then(({ key }) => setNewKey(key)),

@@ -1,9 +1,11 @@
 import type { IntentProposal, PaidFetchResult } from '@semanticauth/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { c, fakeJev } from '../../../test/fake-jev';
-import { fakeMerchantTransport, fakeSelectOffer, MERCHANT } from '../../../test/fake-merchant';
+import { createFakeMerchant, MERCHANT, SETTLEMENT_TX } from '../../../test/fake-merchant';
+import { fakePayments } from '../../../test/fake-payments';
 import { createStore, openDatabase } from '../../adapters/store';
 import type { X402PaymentRequired } from '../../adapters/x402';
+import { selectOffer as selectSupportedOffer } from '../payment-gateway/offer-selection';
 import { defaultPolicy } from '../../domain/policy/policy';
 import { createServices } from '..';
 import type { AgentContext } from '../context';
@@ -26,15 +28,17 @@ function setup() {
   const advance = (ms: number) => (t = new Date(t.getTime() + ms));
   // The merchant's offer can change between the first request and the resumed one.
   const merchant = { amount: undefined as string | undefined };
-  const selectOffer = vi.fn((paymentRequired: X402PaymentRequired) => {
-    const selected = fakeSelectOffer(paymentRequired);
+  const selectOffer = vi.fn((paymentRequired: X402PaymentRequired, requestedUrl: string) => {
+    const selected = selectSupportedOffer(paymentRequired, requestedUrl)!;
     if (merchant.amount) selected.offer.amount = merchant.amount;
     return selected;
   });
+  const shop = createFakeMerchant();
   const policy = { allow: true };
   const services = createServices({
     store: createStore(openDatabase(':memory:')),
-    transport: fakeMerchantTransport(),
+    transport: shop.transport,
+    ...fakePayments(),
     // Every paid offer looks like a subscription → REVIEW.
     jev: fakeJev({ billing_basis: c('recurring_subscription', 0.9) }),
     policy: (input) =>
@@ -71,6 +75,7 @@ function setup() {
     merchant,
     policy,
     selectOffer,
+    shop,
     alice,
     bob: agentOf('bob'),
     taskId,
@@ -137,8 +142,9 @@ describe('ReviewService', () => {
   });
 
   it('resumes an approved review with the same offer and goes on to pay', async () => {
-    const { fetchPaid, reviews, payments, alice, selectOffer } = setup();
+    const { fetchPaid, reviews, payments, alice, selectOffer, shop } = setup();
     const { result, reviewId } = await fetchPaid();
+    expect(shop.payments).toHaveLength(0);
 
     expect(reviews.approve(alice.userId, reviewId)).toMatchObject({
       status: 'approved',
@@ -148,11 +154,15 @@ describe('ReviewService', () => {
 
     const resumed = await payments.paidFetch(alice, { url: PAID });
     expect(selectOffer).toHaveBeenCalledTimes(2);
-    // Payment execution is member 3's next step; until then it closes without paying.
-    expect(stateOf(resumed)).toEqual({
-      state: 'closed',
-      message: 'Payment execution is not implemented yet. Nothing was paid.',
+    expect(resumed).toMatchObject({
+      operationId: result.operationId,
+      state: 'delivered',
+      verdict: 'ALLOW',
+      // Why the user was asked stays on the operation.
+      reason: 'subscription',
+      settlement: { txHash: SETTLEMENT_TX },
     });
+    expect(shop.payments).toHaveLength(1);
     expect(reviews.checkForAgent(alice, result.operationId).message).toContain('already used');
   });
 
@@ -184,15 +194,19 @@ describe('ReviewService', () => {
   });
 
   it('resumes only once when the agent repeats the call concurrently', async () => {
-    const { fetchPaid, reviews, payments, alice } = setup();
-    const { reviewId } = await fetchPaid();
+    const { fetchPaid, reviews, payments, alice, shop } = setup();
+    const { result, reviewId } = await fetchPaid();
     reviews.approve(alice.userId, reviewId);
 
     const results = await Promise.all([
       payments.paidFetch(alice, { url: PAID }),
       payments.paidFetch(alice, { url: PAID }),
     ]);
-    expect(results.map((r) => r.state)).toEqual(['closed', 'closed']);
+    // One call pays; the other reports the operation as it found it, mid-payment.
+    expect(results.map((r) => r.operationId)).toEqual([result.operationId, result.operationId]);
+    expect(results[0]!.state).toBe('delivered');
+    expect(shop.payments).toHaveLength(1);
+    expect(payments.getOperation(alice.userId, result.operationId).state).toBe('delivered');
   });
 
   it.each([

@@ -17,6 +17,7 @@ export const testConfig: Config = {
   userAllocation: 2_000_000n,
   x402AllowHttpLocalhost: false,
   jev: undefined,
+  payments: { signer: undefined, chainReader: {}, poolLimit: 20_000_000n },
 };
 
 /** Fake Google: the callback `code` becomes the Google account id, so tests can log in as anyone. */
