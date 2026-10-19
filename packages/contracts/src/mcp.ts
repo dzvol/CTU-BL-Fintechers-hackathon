@@ -69,5 +69,7 @@ export type CheckReviewInput = z.infer<typeof CheckReviewInputSchema>;
 export const CheckReviewResultSchema = z.object({
   operationId: OperationIdSchema,
   status: ReviewStatusSchema,
+  /** What the agent should do next. */
+  message: z.string().optional(),
 });
 export type CheckReviewResult = z.infer<typeof CheckReviewResultSchema>;

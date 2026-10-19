@@ -13,7 +13,7 @@ describe('MCP server', () => {
     await client.close();
   });
 
-  it('returns service errors as tool errors (501 stubs for now)', async () => {
+  it('returns service errors as tool errors', async () => {
     const app = createTestApp();
     const { key } = await createAgentKey(app);
     const client = await connect(app, key);
@@ -23,7 +23,7 @@ describe('MCP server', () => {
       arguments: { operationId: 'op_00000000-0000-0000-0000-000000000000' },
     });
     expect(result.isError).toBe(true);
-    expect(JSON.stringify(result.content)).toContain('not_implemented');
+    expect(JSON.stringify(result.content)).toContain('not_found');
     await client.close();
   });
 

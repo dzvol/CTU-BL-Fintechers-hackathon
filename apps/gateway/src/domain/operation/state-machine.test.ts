@@ -24,6 +24,7 @@ describe('operation state machine', () => {
   it('maps failures to blocked before issuing and unknown after', () => {
     expect(failureState('requested')).toBe('blocked');
     expect(failureState('prepared')).toBe('blocked');
+    expect(failureState('awaiting_review')).toBe('closed');
     expect(failureState('issued')).toBe('unknown');
     expect(failureState('submitted')).toBe('unknown');
     expect(failureState('delivered')).toBeUndefined();

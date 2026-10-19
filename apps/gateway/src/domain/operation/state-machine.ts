@@ -29,10 +29,12 @@ export function isTerminal(state: OperationState): boolean {
 
 /**
  * Where a failure in `state` leads. Before the authorization is issued nothing can have been
- * paid, so the operation is blocked; afterwards the outcome is unknown and counts as spent.
+ * paid, so the operation is blocked (or closed, when resuming an approved review failed);
+ * afterwards the outcome is unknown and counts as spent.
  */
-export function failureState(state: OperationState): 'blocked' | 'unknown' | undefined {
+export function failureState(state: OperationState): 'blocked' | 'closed' | 'unknown' | undefined {
   if (canTransition(state, 'blocked')) return 'blocked';
+  if (state === 'awaiting_review') return 'closed';
   if (canTransition(state, 'unknown')) return 'unknown';
   return undefined;
 }
