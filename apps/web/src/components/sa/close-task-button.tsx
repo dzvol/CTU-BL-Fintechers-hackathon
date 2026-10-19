@@ -14,20 +14,26 @@ import {
   AlertDialogCancel,
 } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
-export function CloseTaskButton({ task }: { task: Task }) {
+
+export function CloseTaskButton({ task, size = 'sm' }: { task: Task; size?: 'sm' | 'default' }) {
   const qc = useQueryClient();
   const action = useMutation({
     mutationFn: () => closeTask(task.id),
     onSuccess: () => {
       void qc.invalidateQueries();
-      toast.success('Task closed.');
+      toast.success('Task stopped.');
     },
     onError: (e) => toast.error(e.message),
   });
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" disabled={action.isPending}>
+        <Button
+          variant="outline"
+          size={size}
+          className={size === 'sm' ? 'h-9' : undefined}
+          disabled={action.isPending}
+        >
           Stop task
         </Button>
       </AlertDialogTrigger>
@@ -35,13 +41,15 @@ export function CloseTaskButton({ task }: { task: Task }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Stop this task?</AlertDialogTitle>
           <AlertDialogDescription>
-            This closes the active task and prevents new requests under it. Already-issued payments
-            may still complete. Completed payments are not reversed.
+            Your agent can't buy anything more for it. Payments already on their way still finish.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep active</AlertDialogCancel>
-          <AlertDialogAction disabled={action.isPending} onClick={() => action.mutate()}>
+          <AlertDialogCancel>Keep running</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => action.mutate()}
+          >
             Stop task
           </AlertDialogAction>
         </AlertDialogFooter>

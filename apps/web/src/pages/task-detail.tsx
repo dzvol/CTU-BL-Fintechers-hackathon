@@ -1,177 +1,223 @@
+import type { ReactNode } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Bot, Check, Clock, Hourglass, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useIntent, useTasks, useOperations } from '@/api/hooks';
+import { useIntent, useKeys, useOperations, useTasks } from '@/api/hooks';
 import { approveIntent, rejectIntent } from '@/api/intents';
-import { Button } from '@/components/ui/button';
-import {
-  PageHeader,
-  Loading,
-  ErrorState,
-  KV,
-  Money,
-  fmtTime,
-  Panel,
-  Unsupported,
-} from '@/components/sa/common';
-import { StatusBadge } from '@/components/sa/status';
+import { ActivityList } from '@/components/sa/activity-list';
 import { CloseTaskButton } from '@/components/sa/close-task-button';
-import { PurchaseTable } from '@/components/sa/purchase-table';
+import {
+  Badge,
+  ErrorState,
+  Hint,
+  Loading,
+  Meter,
+  Money,
+  PageHeader,
+  Section,
+} from '@/components/sa/common';
+import { Button } from '@/components/ui/button';
+import { taskStatus } from '@/lib/labels';
+import { countdown, fromNow, fullTime, useNow } from '@/lib/time';
+
+function Term({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0 px-4 py-3 sm:px-5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 font-medium">{children}</dd>
+    </div>
+  );
+}
+
 export function TaskDetail() {
   const { id } = useParams({ strict: false }),
     intent = useIntent(id ?? ''),
     tasks = useTasks(),
     ops = useOperations(),
-    qc = useQueryClient();
-  const action = useMutation({
-    mutationFn: async (decision: 'approve' | 'reject') => {
-      if (!intent.data) throw new Error('Intent unavailable');
-      return decision === 'approve' ? approveIntent(intent.data.id) : rejectIntent(intent.data.id);
-    },
-    onSuccess: () => {
+    keys = useKeys(),
+    qc = useQueryClient(),
+    now = useNow();
+  const decide = useMutation({
+    mutationFn: (decision: 'approve' | 'reject') =>
+      decision === 'approve' ? approveIntent(intent.data!.id) : rejectIntent(intent.data!.id),
+    onSuccess: (_, decision) => {
       void qc.invalidateQueries();
-      toast.success('Intent decision recorded.');
+      toast.success(
+        decision === 'approve' ? 'Task approved. Your agent can start.' : 'Task rejected.',
+      );
     },
   });
   if (intent.isPending) return <Loading />;
   if (intent.error)
     return <ErrorState error={intent.error} onRetry={() => void intent.refetch()} />;
   if (!intent.data) return <Loading />;
-  const i = intent.data,
-    task = tasks.data?.find((t) => t.intentId === i.id);
-  const pending = i.status === 'pending_approval',
-    expired = Date.parse(i.expiresAt) <= Date.now();
+
+  const i = intent.data;
+  const task = tasks.data?.find((t) => t.intentId === i.id);
+  const status = taskStatus(i.status, task?.status);
+  const pending = i.status === 'pending_approval';
+  const left = countdown(i.expiresAt, now);
+  const agent = keys.data?.find((k) => k.id === i.apiKeyId)?.name;
+  const purchases = (ops.data ?? [])
+    .filter((o) => task && o.taskId === task.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
   return (
-    <>
-      <Button asChild variant="ghost" className="mb-3 -ml-2">
-        <Link to="/mandates">← Tasks</Link>
+    <div className={pending ? 'pb-24' : undefined}>
+      <Button asChild variant="ghost" size="sm" className="-ml-3 mb-4 h-8 text-muted-foreground">
+        <Link to="/tasks">
+          <ArrowLeft aria-hidden />
+          Tasks
+        </Link>
       </Button>
       <PageHeader
-        title={pending ? 'Review proposed task' : 'Task details'}
-        description={
-          <>
-            <StatusBadge value={task?.status ?? i.status} />
-            <span className="mt-2 block">
-              {task?.status === 'active'
-                ? 'Your agent can request purchases within these approved limits.'
-                : pending
-                  ? 'No purchases are authorized until you approve.'
-                  : 'No new purchases are authorized by these historical terms.'}
-            </span>
-          </>
+        title={i.purpose}
+        actions={
+          task?.status === 'active' ? <CloseTaskButton task={task} size="default" /> : undefined
         }
-        actions={task?.status === 'active' ? <CloseTaskButton task={task} /> : undefined}
-      />
-      <div className="task-document">
-        <section className="task-purpose">
-          <h2>Purpose</h2>
-          <p className="mb-4 text-lg">{i.purpose}</p>
-          <h2>Original request</h2>
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{i.task}</p>
-        </section>
-        <section className="task-permissions">
-          <div className="task-section">
-            <h2>Allowed purchases</h2>
-            <ul className="list-disc space-y-2 pl-5 text-sm">
-              {i.allowedPurchases.map((p, n) => (
-                <li key={n}>{p}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="task-section">
-            <h2>Never allowed</h2>
-            <ul className="list-disc space-y-2 pl-5 text-sm">
-              {i.forbidden.map((p, n) => (
-                <li key={n}>{p}</li>
-              ))}
-            </ul>
-          </div>
-        </section>
-        <section className="task-terms">
-          <h2>Task terms</h2>
-          <dl className="divide-y">
-            <KV label="Total budget">
-              <Money value={i.budget} />
-            </KV>
-            <KV label="Per purchase">
-              <Money value={i.maxPerPurchase} />
-            </KV>
-            <KV label="Planned purchases">{i.plannedPurchases}</KV>
-            <KV label={task ? 'Task expires' : 'Proposal expires'}>
-              {fmtTime(task?.expiresAt ?? i.expiresAt, true)}
-            </KV>
-          </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Intent terms are immutable. Reject an incorrect proposal and ask your agent to submit
-            another.
-          </p>
-        </section>
-      </div>
-      <Unsupported>
-        Editing or amending intent terms, interpretation confidence, disclosure controls and content
-        hashes are not provided by the gateway.
-      </Unsupported>
-      {tasks.error && <ErrorState error={tasks.error} />}
-      <details className="my-4 border-b py-3">
-        <summary className="min-h-11 cursor-pointer text-sm font-semibold">
-          Agent proposal & record
-        </summary>
-        <dl>
-          <KV label="Intent ID" mono>
-            {i.id}
-          </KV>
-          {task && (
-            <KV label="Task ID" mono>
-              {task.id}
-            </KV>
+      >
+        <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Badge tone={status.tone} icon={status.icon}>
+            {status.text}
+          </Badge>
+          {agent && (
+            <span className="flex items-center gap-1.5">
+              <Hint label="Proposed by">
+                <Bot className="size-4" aria-hidden />
+              </Hint>
+              {agent}
+            </span>
           )}
-          <KV label="Agent key ID" mono>
-            {i.apiKeyId}
-          </KV>
-          <KV label="Submitted">{fmtTime(i.createdAt, true)}</KV>
-          {i.decidedAt && <KV label="Decision recorded">{fmtTime(i.decidedAt, true)}</KV>}
-        </dl>
-      </details>
-      {pending && (
-        <footer className="task-footer">
-          <p className="mb-3 text-sm">
-            Approve only if the purpose, allowed purchases and limits match your request.
-          </p>
-          {expired && (
-            <p role="status" className="mb-3">
-              This proposal has expired. Ask your agent for a new one.
+          <span className="flex items-center gap-1.5">
+            <Hint label="Proposed">
+              <Clock className="size-4" aria-hidden />
+            </Hint>
+            <time dateTime={i.createdAt} title={fullTime(i.createdAt)}>
+              {fromNow(i.createdAt, now)}
+            </time>
+          </span>
+        </span>
+      </PageHeader>
+
+      {task && (
+        <Section title="Budget">
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <p className="flex flex-wrap items-baseline justify-between gap-2">
+              <span>
+                <Money value={task.spent} unit={false} className="text-xl font-semibold" />
+                <span className="text-sm text-muted-foreground"> of </span>
+                <Money value={task.budget} className="text-sm text-muted-foreground" />
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Hint
+                  label={
+                    task.status === 'active' ? 'Task ends' : task.closedAt ? 'Stopped' : 'Ended'
+                  }
+                >
+                  <Clock className="size-4" aria-hidden />
+                </Hint>
+                {fromNow(task.closedAt ?? task.expiresAt, now)}
+              </span>
             </p>
+            <Meter
+              className="mt-3"
+              total={task.budget}
+              spent={task.spent}
+              reserved={task.reserved}
+            />
+            {BigInt(task.reserved) > 0n && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Hint label="On hold for payments in progress">
+                  <Hourglass className="size-3.5 text-warning" aria-hidden />
+                </Hint>
+                <Money value={task.reserved} />
+              </p>
+            )}
+          </div>
+        </Section>
+      )}
+
+      <Section title="Request">
+        <blockquote className="whitespace-pre-wrap border-l-2 pl-4 text-[15px] leading-relaxed">
+          {i.task}
+        </blockquote>
+      </Section>
+
+      <Section title="Rules">
+        <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2">
+          <div className="bg-card p-4 sm:p-5">
+            <h3 className="mb-2 text-xs text-muted-foreground">Can buy</h3>
+            <ul className="space-y-1.5 text-sm">
+              {i.allowedPurchases.map((p, n) => (
+                <li key={n} className="flex gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-card p-4 sm:p-5">
+            <h3 className="mb-2 text-xs text-muted-foreground">Never buys</h3>
+            <ul className="space-y-1.5 text-sm">
+              {i.forbidden.map((p, n) => (
+                <li key={n} className="flex gap-2">
+                  <X className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <dl className="mt-3 grid grid-cols-3 divide-x overflow-hidden rounded-xl border bg-card">
+          <Term label="Total budget">
+            <Money value={i.budget} />
+          </Term>
+          <Term label="Max per purchase">
+            <Money value={i.maxPerPurchase} />
+          </Term>
+          <Term label="Purchases planned">{i.plannedPurchases}</Term>
+        </dl>
+      </Section>
+
+      {task && (
+        <Section title="Purchases">
+          {ops.error ? (
+            <ErrorState error={ops.error} onRetry={() => void ops.refetch()} />
+          ) : purchases.length ? (
+            <ActivityList operations={purchases} />
+          ) : (
+            <p className="text-sm text-muted-foreground">No purchases yet.</p>
           )}
-          {action.error && <ErrorState error={action.error} />}
-          <div className="mt-3 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              disabled={action.isPending || expired}
-              onClick={() => action.mutate('reject')}
-            >
-              Reject intent
-            </Button>
-            <Button disabled={action.isPending || expired} onClick={() => action.mutate('approve')}>
-              Approve task
-            </Button>
+        </Section>
+      )}
+
+      {pending && (
+        <footer className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 backdrop-blur md:left-60">
+          <div className="mx-auto flex max-w-[880px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-8">
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {left ? `Expires in ${left}` : 'This proposal expired. Ask your agent for a new one.'}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={decide.isPending || !left}
+                onClick={() => decide.mutate('reject')}
+              >
+                Reject
+              </Button>
+              <Button disabled={decide.isPending || !left} onClick={() => decide.mutate('approve')}>
+                Approve task
+              </Button>
+            </div>
+            {decide.error && (
+              <div className="w-full">
+                <ErrorState error={decide.error} />
+              </div>
+            )}
           </div>
         </footer>
       )}
-      {task && (
-        <Panel title="Purchases under this task">
-          {ops.isPending ? (
-            <Loading />
-          ) : ops.error ? (
-            <ErrorState error={ops.error} />
-          ) : (
-            <PurchaseTable
-              operations={(ops.data ?? []).filter((o) => o.taskId === task.id)}
-              intents={[i]}
-              tasks={[task]}
-            />
-          )}
-        </Panel>
-      )}
-    </>
+    </div>
   );
 }

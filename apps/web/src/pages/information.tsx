@@ -1,56 +1,72 @@
-import { PageHeader, Unsupported } from '@/components/sa/common';
+import { ChevronDown, ExternalLink } from 'lucide-react';
+import { PageHeader } from '@/components/sa/common';
+import { Button } from '@/components/ui/button';
+
+const QUESTIONS = [
+  {
+    q: 'Who approves spending?',
+    a: 'You do. Your agent proposes a task with a budget and rules, and nothing is bought until you approve it here. Agents can never approve anything themselves.',
+  },
+  {
+    q: 'Why did a payment stop for my review?',
+    a: 'The gateway pauses purchases that look risky: a changed recipient, a subscription, or an offer that doesn’t clearly fit the task. You have 5 minutes to approve or reject it on Overview.',
+  },
+  {
+    q: 'Whose money does my agent spend?',
+    a: 'A shared sponsor wallet on the Base Sepolia testnet. Your account gets an allowance, shown in the sidebar. When it runs out, agent keys stop working.',
+  },
+  {
+    q: 'What does “Unconfirmed” mean?',
+    a: 'The payment was sent but isn’t confirmed on chain yet. It counts as spent and is never retried automatically.',
+  },
+  {
+    q: 'Can I change a proposed task?',
+    a: 'No, approved terms can’t change. Reject the proposal and ask your agent for a new one.',
+  },
+  {
+    q: 'What happens when I replace my key?',
+    a: 'The old key stops working at once and its active task ends. Your history and allowance stay as they are.',
+  },
+];
+
 export function Faq() {
   return (
     <>
-      <PageHeader title="Frequently asked questions" />
-      <section className="space-y-6">
-        <div>
-          <h2 className="mb-2 font-semibold">Who approves spending?</h2>
-          <p>
-            The owner approves an agent's intent in this dashboard. The gateway enforces the
-            approved task on each purchase. Agent keys cannot approve.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 font-semibold">Is this a personal wallet?</h2>
-          <p>
-            No. The gateway uses a shared sponsor-funded wallet on Base Sepolia. Your assigned
-            allocation does not show the wallet balance or your currently available funds.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 font-semibold">What happens if payment times out?</h2>
-          <p>
-            An unknown outcome is not a failed payment. Issued authorizations count as spent until
-            reconciliation proves otherwise. Never retry payment automatically.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 font-semibold">Can I edit a proposed task?</h2>
-          <p>
-            Intent terms are immutable. Reject incorrect terms and ask the agent for a new proposal.
-          </p>
-        </div>
-        <div>
-          <h2 className="mb-2 font-semibold">What is still unavailable?</h2>
-          <p>
-            Purchase review decisions return 501 in this backend. Paid offer selection, payment
-            execution and ledger totals are incomplete. Magic links, admin data access, contact
-            submission and detailed audit evidence have no dashboard implementation yet.
-          </p>
-        </div>
-      </section>
+      <PageHeader title="FAQ" />
+      <div className="divide-y overflow-hidden rounded-xl border bg-card">
+        {QUESTIONS.map(({ q, a }) => (
+          <details key={q} className="group px-4 sm:px-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium [&::-webkit-details-marker]:hidden">
+              {q}
+              <ChevronDown
+                className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                aria-hidden
+              />
+            </summary>
+            <p className="-mt-1 pb-4 text-sm leading-relaxed text-muted-foreground">{a}</p>
+          </details>
+        ))}
+      </div>
     </>
   );
 }
+
 export function Contact() {
   return (
     <>
-      <PageHeader title="Contact" description="Ask your hackathon team for support." />
-      <Unsupported>
-        Contact submission is not connected. The gateway does not expose a contact endpoint; no
-        message will be sent from this page.
-      </Unsupported>
+      <PageHeader title="Contact">
+        Found a bug or have a question? Open an issue and the team will get back to you.
+      </PageHeader>
+      <Button asChild variant="outline">
+        <a
+          href="https://github.com/dzvol/CTU-BL-Fintechers-hackathon/issues"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open an issue on GitHub
+          <ExternalLink aria-hidden />
+        </a>
+      </Button>
     </>
   );
 }

@@ -1,159 +1,150 @@
 import { Link, useParams } from '@tanstack/react-router';
-import { useOperation, useTasks, useIntents, useReviews } from '@/api/hooks';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { useIntents, useOperation, useReviews } from '@/api/hooks';
 import {
-  PageHeader,
+  Badge,
+  CopyButton,
   ErrorState,
+  Field,
   Loading,
-  KV,
   Money,
-  Panel,
-  fmtTime,
-  Unsupported,
+  PageHeader,
+  Section,
 } from '@/components/sa/common';
-import { StatusBadge } from '@/components/sa/status';
-import { paymentLabel, deliveryLabel, operationHost } from '@/lib/operation-display';
-import { PurchaseReviewDialog } from '@/components/sa/review-queue';
+import { ReviewCard } from '@/components/sa/review-card';
+import { Button } from '@/components/ui/button';
+import { REASON, host, outcome, path, shortHex } from '@/lib/labels';
+import { fromNow, fullTime } from '@/lib/time';
+
 export function PurchaseDetail() {
   const { id } = useParams({ strict: false }),
     q = useOperation(id ?? ''),
-    tasks = useTasks(),
     intents = useIntents(),
     reviews = useReviews();
   if (q.isPending) return <Loading />;
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
   if (!q.data) return <Loading />;
-  const op = q.data,
-    task = tasks.data?.find((t) => t.id === op.taskId),
-    intent = intents.data?.find((i) => i.id === task?.intentId),
-    review = reviews.data?.find((r) => r.operationId === op.id && r.status === 'pending');
+  const op = q.data;
+  const intent = intents.data?.find((i) => i.taskId === op.taskId);
+  const review = reviews.data
+    ?.filter((r) => r.operationId === op.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  const state = outcome(op);
+
   return (
     <>
-      <Button asChild variant="ghost" className="mb-3 -ml-2">
-        <Link to="/activity">← Activity</Link>
+      <Button asChild variant="ghost" size="sm" className="-ml-3 mb-4 h-8 text-muted-foreground">
+        <Link to="/activity">
+          <ArrowLeft aria-hidden />
+          Activity
+        </Link>
       </Button>
       <PageHeader
-        title={operationHost(op)}
-        description={fmtTime(op.createdAt, true)}
-        actions={
-          op.state === 'awaiting_review' && review ? (
-            <PurchaseReviewDialog review={review} />
-          ) : undefined
-        }
-      />
-      <div className="mb-6 grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
-        <div className="bg-card p-4">
-          <p className="mb-1 text-xs text-muted-foreground">Amount</p>
-          {op.offer ? <Money value={op.offer.amount} /> : <p className="text-sm">Not reported</p>}
-        </div>
-        <div className="bg-card p-4">
-          <p className="mb-1 text-xs text-muted-foreground">Decision</p>
-          {op.verdict ? (
-            <StatusBadge value={op.verdict} />
-          ) : (
-            <p className="text-sm">Not reported</p>
-          )}
-        </div>
-        <div className="bg-card p-4">
-          <p className="mb-1 text-xs text-muted-foreground">Payment</p>
-          <p className="text-sm">{paymentLabel(op)}</p>
-        </div>
-        <div className="bg-card p-4">
-          <p className="mb-1 text-xs text-muted-foreground">Delivery</p>
-          <p className="text-sm">{deliveryLabel(op)}</p>
-        </div>
-      </div>
-      {op.state === 'awaiting_review' && reviews.error && (
-        <ErrorState error={reviews.error} onRetry={() => void reviews.refetch()} />
+        title={host(op.url)}
+        actions={op.offer && <Money value={op.offer.amount} className="text-2xl font-semibold" />}
+      >
+        <span className="flex flex-wrap items-center gap-2">
+          <Badge tone={state.tone} icon={state.icon}>
+            {state.text}
+          </Badge>
+          <time dateTime={op.createdAt} title={fullTime(op.createdAt)}>
+            {fromNow(op.createdAt)}
+          </time>
+        </span>
+      </PageHeader>
+
+      {review?.status === 'pending' && (
+        <Section title="Waiting for you">
+          <ReviewCard review={review} showLink={false} />
+        </Section>
       )}
-      <div className="grid min-w-0 gap-6 lg:grid-cols-3">
-        <div className="min-w-0 lg:col-span-2">
-          <Panel title="Approved purpose & actual purchase">
-            <dl>
-              {intent && (
-                <KV stackOnMobile label="Approved purpose">
-                  <Link
-                    to="/mandates/$id"
-                    params={{ id: intent.id }}
-                    className="text-primary hover:underline"
-                  >
-                    {intent.purpose}
-                  </Link>
-                </KV>
-              )}
-              <KV stackOnMobile label="Resource" mono>
-                {op.url}
-              </KV>
-              <KV stackOnMobile label="Task ID" mono>
-                {op.taskId}
-              </KV>
-              {op.offer && (
-                <>
-                  <KV stackOnMobile label="Recipient" mono>
-                    {op.offer.payTo}
-                  </KV>
-                  <KV label="Network">{op.offer.network}</KV>
-                  <KV label="Payment scheme">{op.offer.scheme}</KV>
-                </>
-              )}
-            </dl>
-          </Panel>
-          <Panel title="Decision reasons">
-            <p className="text-sm">{op.message ?? 'No explanation reported.'}</p>
-            {op.reason && <p className="mt-2 font-mono text-xs">{op.reason}</p>}
-          </Panel>
-          {op.offer?.description && (
-            <Panel title="Provider description · untrusted content">
-              <blockquote className="border-l-2 pl-3 text-sm">{op.offer.description}</blockquote>
-            </Panel>
-          )}
-          <Unsupported>
-            Returned data, full event history, disclosed inputs, request/offer hashes and detailed
-            Jev evidence are not exposed by the dashboard API.
-          </Unsupported>
+
+      <Section title="Decision">
+        <div className="rounded-xl border bg-card px-4 sm:px-5">
+          <dl className="divide-y">
+            {op.reason && <Field label="Reason">{REASON[op.reason]}</Field>}
+            {op.message && <Field label="Details">{op.message}</Field>}
+            {review && review.status !== 'pending' && (
+              <Field label="Your review">
+                {review.status === 'approved'
+                  ? 'Approved'
+                  : review.status === 'rejected'
+                    ? 'Rejected'
+                    : 'Expired without a decision'}
+                {review.decidedAt && (
+                  <span className="text-muted-foreground"> · {fromNow(review.decidedAt)}</span>
+                )}
+              </Field>
+            )}
+            {intent && (
+              <Field label="Task">
+                <Link to="/tasks/$id" params={{ id: intent.id }} className="hover:underline">
+                  {intent.purpose}
+                </Link>
+              </Field>
+            )}
+          </dl>
         </div>
-        <div className="min-w-0">
-          <Panel title="Current operation state">
-            <StatusBadge value={op.state} />
-            <dl className="mt-3">
-              <KV label="Requested">{fmtTime(op.createdAt, true)}</KV>
-              <KV label="Last updated">{fmtTime(op.updatedAt, true)}</KV>
-            </dl>
-          </Panel>
-          <Panel title="Transaction evidence">
-            {op.settlement ? (
+      </Section>
+
+      <Section title="Payment">
+        <div className="rounded-xl border bg-card px-4 sm:px-5">
+          <dl className="divide-y">
+            <Field label="Resource" mono>
+              {path(op.url) || op.url}
+            </Field>
+            {op.offer ? (
               <>
-                <a
-                  href={`https://sepolia.basescan.org/tx/${encodeURIComponent(op.settlement.txHash)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all font-mono text-xs text-primary underline"
-                >
-                  {op.settlement.txHash}
-                  <span className="sr-only"> (opens Base Sepolia explorer)</span>
-                </a>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Settlement reported by the gateway.
-                </p>
+                <Field label="Recipient" mono>
+                  <span className="flex items-center gap-1" title={op.offer.payTo}>
+                    {shortHex(op.offer.payTo, 6)}
+                    <CopyButton value={op.offer.payTo} label="Copy recipient" className="size-7" />
+                  </span>
+                </Field>
+                <Field label="Network">USDC on Base Sepolia</Field>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">No settlement evidence reported.</p>
+              <Field label="Price">
+                {op.reason === 'free_content' ? 'Free' : 'No valid offer'}
+              </Field>
             )}
-          </Panel>
-          <Panel title="Record identifiers">
-            <dl>
-              <KV stackOnMobile label="Operation ID" mono>
-                {op.id}
-              </KV>
-              {review && (
-                <KV stackOnMobile label="Review ID" mono>
-                  {review.id}
-                </KV>
-              )}
-            </dl>
-          </Panel>
+            {op.settlement ? (
+              <Field label="Transaction" mono>
+                <a
+                  href={op.settlement.explorerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  {shortHex(op.settlement.txHash, 6)}
+                  <ExternalLink className="size-3.5" aria-hidden />
+                  <span className="sr-only">(opens Basescan)</span>
+                </a>
+              </Field>
+            ) : (
+              op.state === 'unknown' && (
+                <Field label="Transaction">Not confirmed yet. Counted as spent until it is.</Field>
+              )
+            )}
+            <Field label="Updated">{fullTime(op.updatedAt)}</Field>
+          </dl>
         </div>
-      </div>
+      </Section>
+
+      {op.offer?.description && (
+        <details className="group mb-10 text-sm">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+            Merchant's description
+          </summary>
+          <p className="mt-2 rounded-lg bg-muted p-3 text-muted-foreground">
+            Written by the merchant, not verified.
+            <span className="mt-2 block whitespace-pre-wrap text-foreground">
+              {op.offer.description}
+            </span>
+          </p>
+        </details>
+      )}
+      <p className="font-mono text-xs text-muted-foreground">{op.id}</p>
     </>
   );
 }

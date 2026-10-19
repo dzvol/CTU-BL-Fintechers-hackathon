@@ -5,6 +5,7 @@ export const user: Me = {
   email: 'owner@example.test',
   name: 'Local owner',
   allocation: '2000000',
+  balance: { spent: '500000', reserved: '0', remaining: '1500000' },
 };
 export const key: ApiKey = {
   id: `key_${uuid}`,
@@ -61,8 +62,10 @@ export const review: Review = {
   id: `rev_${uuid}`,
   operationId: operation.id,
   status: 'pending',
-  reason: 'unclear_fit',
+  reason: 'recipient_change',
   offer: operation.offer!,
+  url: operation.url,
+  detail: 'Pays a different address than before.',
   createdAt: intent.createdAt,
   expiresAt: intent.expiresAt,
 };

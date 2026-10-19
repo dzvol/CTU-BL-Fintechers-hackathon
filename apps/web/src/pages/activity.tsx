@@ -1,195 +1,83 @@
 import { useState } from 'react';
-import { Link, useSearch, useNavigate } from '@tanstack/react-router';
-import type { Operation } from '@semanticauth/contracts';
-import { useOperations, useIntents, useTasks } from '@/api/hooks';
-import { Button } from '@/components/ui/button';
-import { PageHeader, Panel, Empty, ErrorState, Loading } from '@/components/sa/common';
-import { PurchaseTable } from '@/components/sa/purchase-table';
+import { Link, useSearch } from '@tanstack/react-router';
+import { Search } from 'lucide-react';
+import { useIntents, useOperations } from '@/api/hooks';
+import { ActivityList } from '@/components/sa/activity-list';
+import { Empty, ErrorState, Loading, PageHeader } from '@/components/sa/common';
 import { Input } from '@/components/ui/input';
-import { FilterField } from '@/components/sa/filter-field';
-import { paymentLabel, deliveryLabel } from '@/lib/operation-display';
-import { ReviewQueue } from '@/components/sa/review-queue';
-export const FILTERS = [
-  { id: 'all', label: 'All', test: () => true },
-  {
-    id: 'needs_review',
-    label: 'Needs review',
-    test: (o: Operation) => o.state === 'awaiting_review',
-  },
-  { id: 'blocked', label: 'Blocked', test: (o: Operation) => o.state === 'blocked' },
-  {
-    id: 'pending_payment',
-    label: 'Pending payment',
-    test: (o: Operation) =>
-      ['reserved', 'prepared', 'issued', 'submitted', 'unknown'].includes(o.state),
-  },
-  { id: 'paid', label: 'Paid', test: (o: Operation) => !!o.settlement },
-  {
-    id: 'delivery_problems',
-    label: 'Delivery problems',
-    test: (o: Operation) => o.state === 'delivery_failed',
-  },
-] as const;
-export type ActivityFilter = (typeof FILTERS)[number]['id'];
+import { FILTERS } from '@/lib/filters';
+import { cn } from '@/lib/utils';
+
 export function Activity() {
-  const navigate = useNavigate();
   const search = useSearch({ strict: false }),
     ops = useOperations(),
-    intents = useIntents(),
-    tasks = useTasks();
-  const [searchText, setSearchText] = useState(''),
-    [decision, setDecision] = useState('all'),
-    [payment, setPayment] = useState('all'),
-    [delivery, setDelivery] = useState('all'),
-    [taskId, setTaskId] = useState('all'),
-    [from, setFrom] = useState(''),
-    [until, setUntil] = useState('');
+    intents = useIntents();
+  const [text, setText] = useState('');
   const filter = FILTERS.find((f) => f.id === search.filter) ?? FILTERS[0];
-  const rows =
-    ops.data
-      ?.filter(filter.test)
-      .filter((o) => {
-        const purpose =
-          intents.data?.find((i) => i.id === tasks.data?.find((t) => t.id === o.taskId)?.intentId)
-            ?.purpose ?? '';
-        return (
-          `${o.url} ${purpose}`.toLowerCase().includes(searchText.toLowerCase()) &&
-          (decision === 'all' || o.verdict === decision) &&
-          (payment === 'all' || paymentLabel(o) === payment) &&
-          (delivery === 'all' || deliveryLabel(o) === delivery) &&
-          (taskId === 'all' || o.taskId === taskId) &&
-          (!from || o.createdAt.slice(0, 10) >= from) &&
-          (!until || o.createdAt.slice(0, 10) <= until)
-        );
-      })
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)) ?? [];
+  const purposeOf = (taskId: string) => intents.data?.find((i) => i.taskId === taskId)?.purpose;
+  const all = [...(ops.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const needle = text.trim().toLowerCase();
+  const rows = all
+    .filter(filter.test)
+    .filter(
+      (o) => !needle || `${o.url} ${purposeOf(o.taskId) ?? ''}`.toLowerCase().includes(needle),
+    );
+
   return (
     <>
-      <PageHeader
-        title="Activity"
-        description="Inspect requests, spending decisions, and delivery outcomes."
-      />
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-          Search activity
+      <PageHeader title="Activity">
+        Every purchase your agent tried, and what the gateway did.
+      </PageHeader>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Filter activity" className="flex flex-wrap gap-1">
+          {FILTERS.map((f) => {
+            const count = all.filter(f.test).length;
+            return (
+              <Link
+                key={f.id}
+                to="/activity"
+                search={{ filter: f.id }}
+                className={cn(
+                  'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                  f.id === filter.id &&
+                    'bg-foreground text-background hover:bg-foreground hover:text-background',
+                )}
+                aria-current={f.id === filter.id ? 'page' : undefined}
+              >
+                {f.label}
+                {f.id !== 'all' && count > 0 && (
+                  <span className="text-xs tabular-nums opacity-70">{count}</span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <label className="relative w-full sm:w-64">
+          <span className="sr-only">Search activity</span>
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <Input
             type="search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Service, endpoint, or task"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Merchant or task"
+            className="h-9 pl-9"
           />
         </label>
-        <FilterField
-          label="View"
-          value={filter.id}
-          onChange={(value) =>
-            void navigate({
-              to: '/activity',
-              search: { filter: FILTERS.find((f) => f.id === value)?.id ?? 'all' },
-            })
-          }
-        >
-          {FILTERS.map((f) => (
-            <option value={f.id} key={f.id}>
-              {f.label}
-            </option>
-          ))}
-        </FilterField>
-        <FilterField label="Decision" value={decision} onChange={setDecision}>
-          <option value="all">All decisions</option>
-          <option value="ALLOW">Allowed</option>
-          <option value="BLOCK">Blocked</option>
-          <option value="REVIEW">Needs approval</option>
-        </FilterField>
       </div>
-      <details className="mb-4 border-b pb-3">
-        <summary className="min-h-11 cursor-pointer text-sm font-medium">
-          More filters
-          {[payment !== 'all', delivery !== 'all', taskId !== 'all', !!from, !!until].filter(
-            Boolean,
-          ).length
-            ? ` · ${[payment !== 'all', delivery !== 'all', taskId !== 'all', !!from, !!until].filter(Boolean).length} active`
-            : ''}
-        </summary>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <FilterField label="Payment" value={payment} onChange={setPayment}>
-            <option value="all">All payments</option>
-            {[...new Set(ops.data?.map(paymentLabel))].map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </FilterField>
-          <FilterField label="Delivery" value={delivery} onChange={setDelivery}>
-            <option value="all">All outcomes</option>
-            {[...new Set(ops.data?.map(deliveryLabel))].map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </FilterField>
-          <FilterField label="Task" value={taskId} onChange={setTaskId}>
-            <option value="all">All tasks</option>
-            {[...new Set(ops.data?.map((o) => o.taskId))].map((id) => (
-              <option key={id} value={id}>
-                {intents.data?.find((i) => i.id === tasks.data?.find((t) => t.id === id)?.intentId)
-                  ?.purpose ?? id}
-              </option>
-            ))}
-          </FilterField>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-            From date
-            <Input
-              type="date"
-              value={from}
-              max={until || undefined}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
-            To date
-            <Input
-              type="date"
-              value={until}
-              min={from || undefined}
-              onChange={(e) => setUntil(e.target.value)}
-            />
-          </label>
-        </div>
-      </details>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <p className="mr-auto text-xs text-muted-foreground" role="status">
-          {ops.isPending
-            ? 'Loading activity…'
-            : `${rows.length} matching ${rows.length === 1 ? 'request' : 'requests'}`}
-        </p>
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchText('');
-            setDecision('all');
-            setPayment('all');
-            setDelivery('all');
-            setTaskId('all');
-            setFrom('');
-            setUntil('');
-          }}
-        >
-          <Link to="/activity" search={{ filter: 'all' }}>
-            Clear filters
-          </Link>
-        </Button>
-      </div>
-      <Panel>
-        {ops.isPending ? (
-          <Loading />
-        ) : ops.error ? (
-          <ErrorState error={ops.error} onRetry={() => void ops.refetch()} />
-        ) : rows.length ? (
-          <PurchaseTable operations={rows} intents={intents.data} tasks={tasks.data} />
-        ) : (
-          <Empty title={'No activity matches your filters'} />
-        )}
-      </Panel>
-      {filter.id === 'needs_review' && <ReviewQueue />}
+      {ops.isPending ? (
+        <Loading />
+      ) : ops.error ? (
+        <ErrorState error={ops.error} onRetry={() => void ops.refetch()} />
+      ) : rows.length ? (
+        <ActivityList operations={rows} purposeOf={purposeOf} />
+      ) : (
+        <Empty title={all.length ? 'Nothing matches' : 'No purchases yet'}>
+          {!all.length && 'Purchases appear here once your agent starts buying.'}
+        </Empty>
+      )}
     </>
   );
 }

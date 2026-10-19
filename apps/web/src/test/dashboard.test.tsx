@@ -1,23 +1,33 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor, cleanup, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ApiKey, Intent, Me, Operation, Review, Task } from '@semanticauth/contracts';
 import { App, router, queryClient } from '../App';
-import { intent, key, operation, task, user } from './fixtures';
-import type { ApiKey, Intent, Task } from '@semanticauth/contracts';
+import { intent, key, operation, review, task, user } from './fixtures';
+
 let loggedIn = true;
+let me: Me;
 let intentRecord: Intent;
 let taskRecords: Task[];
 let keyRecords: ApiKey[];
+let operations: Operation[];
+let reviews: Review[];
 let failApproval = false;
 let unauthorizedApproval = false;
 let requests: { path: string; method: string }[];
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+const unauthenticated = () =>
+  json({ error: { code: 'unauthenticated', message: 'Login required' } }, 401);
+
 beforeEach(async () => {
   loggedIn = true;
+  me = { ...user };
   intentRecord = { ...intent };
   taskRecords = [];
-  keyRecords = [];
+  keyRecords = [key];
+  operations = [operation];
+  reviews = [];
   failApproval = false;
   unauthorizedApproval = false;
   requests = [];
@@ -27,10 +37,8 @@ beforeEach(async () => {
     const path = String(input),
       method = init?.method ?? 'GET';
     requests.push({ path, method });
-    if (path === '/api/me')
-      return loggedIn
-        ? json(user)
-        : json({ error: { code: 'unauthenticated', message: 'Login required' } }, 401);
+    if (path === '/api/me') return loggedIn ? json(me) : unauthenticated();
+    if (!loggedIn) return unauthenticated();
     if (path === '/auth/logout') {
       loggedIn = false;
       return new Response(null, { status: 204 });
@@ -40,7 +48,7 @@ beforeEach(async () => {
     if (path === `/api/intents/${intent.id}/approve`) {
       if (unauthorizedApproval) {
         loggedIn = false;
-        return json({ error: { code: 'unauthenticated', message: 'Login required' } }, 401);
+        return unauthenticated();
       }
       if (failApproval)
         return json(
@@ -60,22 +68,24 @@ beforeEach(async () => {
       taskRecords = [{ ...task, status: 'closed' }];
       return json(taskRecords[0]);
     }
-    if (path === '/api/operations') return json({ items: [operation] });
-    if (path === `/api/operations/${operation.id}`) return json(operation);
-    if (path === '/api/reviews')
-      return json(
-        {
-          error: { code: 'not_implemented', message: 'review.listForUser is not implemented yet' },
-        },
-        501,
-      );
+    if (path === '/api/operations') return json({ items: operations });
+    if (path === `/api/operations/${operation.id}`) return json(operations[0]);
+    if (path === '/api/reviews') return json({ items: reviews });
+    if (path === `/api/reviews/${review.id}/approve`) {
+      reviews = [{ ...review, status: 'approved' }];
+      return json(reviews[0]);
+    }
     if (path === '/api/keys' && method === 'GET') return json({ items: keyRecords });
     if (path === '/api/keys' && method === 'POST') {
-      keyRecords = [key];
-      return json({ apiKey: key, key: 'synthetic-test-secret' });
+      const created = { ...key, id: `key_${'2'.repeat(8)}-1111-4111-8111-111111111111` };
+      keyRecords = [
+        ...keyRecords.map((k) => ({ ...k, revokedAt: k.revokedAt ?? k.createdAt })),
+        created,
+      ];
+      return json({ apiKey: created, key: 'synthetic-test-secret' });
     }
-    if (path === `/api/keys/${key.id}` && method === 'DELETE') {
-      keyRecords = [{ ...key, revokedAt: '2026-10-19T19:00:00Z' }];
+    if (path.startsWith('/api/keys/') && method === 'DELETE') {
+      keyRecords = keyRecords.map((k) => ({ ...k, revokedAt: '2026-10-19T19:00:00Z' }));
       return json(keyRecords[0]);
     }
     throw new Error(`Unexpected test request ${method} ${path}`);
@@ -92,44 +102,169 @@ async function open(path: string) {
     await router.navigate({ to: path });
   });
 }
-describe('dashboard user flows with gateway contract responses', () => {
+
+describe('sign-in and session', () => {
   it('offers the real Google endpoint without demo login', async () => {
     loggedIn = false;
     await open('/');
     const link = await screen.findByRole('link', { name: 'Continue with Google' });
     expect(link.getAttribute('href')).toBe('/auth/google/login');
-    expect(screen.queryByRole('button', { name: 'Sign in to demo' })).toBeNull();
   });
-  it('approves the immutable intent and refreshes the active task', async () => {
-    await open(`/mandates/${intent.id}`);
+
+  it('clears private screens after sign-out and after a session expires', async () => {
+    await open('/overview');
+    await screen.findByRole('heading', { name: 'Overview' });
+    await userEvent.click(screen.getAllByRole('button', { name: 'Sign out' })[0]!);
+    await screen.findByRole('link', { name: 'Continue with Google' });
+    expect(screen.queryByRole('heading', { name: 'Overview' })).toBeNull();
+    loggedIn = true;
+    await act(async () => {
+      await queryClient.invalidateQueries();
+    });
+    await screen.findByRole('heading', { name: 'Overview' });
+    loggedIn = false;
+    await act(async () => {
+      await queryClient.invalidateQueries();
+    });
+    await screen.findByRole('link', { name: 'Continue with Google' });
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
+    expect(queryClient.getQueryData(['operations'])).toBeUndefined();
+  });
+
+  it('clears owner data immediately when an approval loses its session', async () => {
+    unauthorizedApproval = true;
+    await open(`/tasks/${intent.id}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Approve task' }));
+    await screen.findByRole('link', { name: 'Continue with Google' });
+    expect(queryClient.getQueryData(['intents', intent.id])).toBeUndefined();
+  });
+});
+
+describe('allowance', () => {
+  it('shows what is left to spend from the gateway balance', async () => {
+    await open('/overview');
+    const allowance = (await screen.findAllByLabelText('Allowance'))[0]!;
+    expect(within(allowance).getByText('Left to spend')).toBeTruthy();
+    expect(within(allowance).getByText('1.50')).toBeTruthy();
+  });
+
+  it('warns once the allowance is used up and refuses new keys in the UI', async () => {
+    me = { ...user, balance: { spent: '2000000', reserved: '0', remaining: '0' } };
+    keyRecords = [];
+    await open('/agent');
+    await screen.findByText('Your allowance is used up. Agent keys no longer work.');
+    expect(await screen.findByRole('button', { name: 'Create key' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+});
+
+describe('decisions', () => {
+  it('approves a proposed task and shows it as active', async () => {
+    await open(`/tasks/${intent.id}`);
     await userEvent.click(await screen.findByRole('button', { name: 'Approve task' }));
     await screen.findByRole('button', { name: 'Stop task' });
     expect(requests).toContainEqual({ path: `/api/intents/${intent.id}/approve`, method: 'POST' });
     expect(screen.queryByRole('button', { name: 'Approve task' })).toBeNull();
   });
-  it('surfaces a conflicting approval instead of reporting success', async () => {
+
+  it('surfaces a refused approval instead of reporting success', async () => {
     failApproval = true;
-    await open(`/mandates/${intent.id}`);
+    await open(`/tasks/${intent.id}`);
     await userEvent.click(await screen.findByRole('button', { name: 'Approve task' }));
     await screen.findByText('Close the active task first');
     expect(screen.getByRole('button', { name: 'Approve task' })).toBeTruthy();
   });
-  it('rejects an intent and closes a confirmed active task', async () => {
-    await open(`/mandates/${intent.id}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Reject intent' }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Reject intent' })).toBeNull());
+
+  it('rejects a proposal, then stops an active task only after confirmation', async () => {
+    await open(`/tasks/${intent.id}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Reject' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Reject' })).toBeNull());
     intentRecord = { ...intentRecord, status: 'approved', taskId: task.id };
     taskRecords = [task];
-    await queryClient.invalidateQueries();
+    await act(async () => {
+      await queryClient.invalidateQueries();
+    });
     await userEvent.click(await screen.findByRole('button', { name: 'Stop task' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Stop task', hidden: false }));
+    expect(requests.some((r) => r.path.endsWith('/close'))).toBe(false);
+    const dialog = await screen.findByRole('alertdialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Stop task' }));
     await waitFor(() =>
       expect(requests).toContainEqual({ path: `/api/tasks/${task.id}/close`, method: 'POST' }),
     );
   });
-  it('creates a key once, hides its secret, and revokes it through confirmation', async () => {
-    await open('/connect');
-    await userEvent.type(await screen.findByLabelText('Agent name'), 'Research assistant');
+
+  it('lists pending decisions on the overview and approves a payment by review ID', async () => {
+    reviews = [review];
+    await open('/overview');
+    const waiting = await screen.findByRole('region', { name: 'Waiting for you' });
+    await within(waiting).findByText('Recipient changed');
+    expect(within(waiting).getByRole('link', { name: 'Review task' })).toBeTruthy();
+    await userEvent.click(within(waiting).getByRole('button', { name: 'Approve payment' }));
+    await waitFor(() =>
+      expect(requests).toContainEqual({
+        path: `/api/reviews/${review.id}/approve`,
+        method: 'POST',
+      }),
+    );
+    expect(requests.some((r) => r.path.includes(operation.id) && r.method === 'POST')).toBe(false);
+  });
+
+  it('refuses an expired payment review without calling the gateway', async () => {
+    reviews = [{ ...review, expiresAt: '2020-01-01T00:00:00Z' }];
+    await open(`/activity/${operation.id}`);
+    await screen.findByText('Expired');
+    expect(screen.getByRole('button', { name: 'Approve payment' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+});
+
+describe('activity', () => {
+  it('files an unconfirmed payment under problems and links settlements to Basescan', async () => {
+    const settled: Operation = {
+      ...operation,
+      id: `op_${'2'.repeat(8)}-1111-4111-8111-111111111111`,
+      url: 'https://paid.example.test/report',
+      state: 'delivered',
+      settlement: {
+        txHash: `0x${'a'.repeat(64)}`,
+        explorerUrl: `https://sepolia.basescan.org/tx/0x${'a'.repeat(64)}`,
+      },
+    };
+    operations = [operation, settled];
+    await open('/activity?filter=problems');
+    await screen.findByRole('img', { name: 'Unconfirmed' });
+    expect(screen.queryByText('paid.example.test')).toBeNull();
+    await userEvent.click(screen.getByRole('link', { name: /^Paid/ }));
+    await screen.findByText('paid.example.test');
+    expect(screen.getByRole('link', { name: 'View on Basescan' }).getAttribute('href')).toBe(
+      settled.settlement!.explorerUrl,
+    );
+  });
+
+  it('never calls a delivered purchase without settlement paid', async () => {
+    operations = [{ ...operation, state: 'delivered', reason: 'within_intent' }];
+    await open('/activity');
+    await screen.findByRole('img', { name: 'Delivered' });
+    expect(screen.queryByRole('img', { name: 'Paid' })).toBeNull();
+  });
+
+  it('searches by merchant', async () => {
+    await open('/activity');
+    await screen.findByText('merchant.example.test');
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search activity' }), 'nothing');
+    await screen.findByText('Nothing matches');
+  });
+});
+
+describe('agent key', () => {
+  it('shows a new key once, keeps it out of the query cache and hides it on Done', async () => {
+    keyRecords = [];
+    await open('/agent');
+    await userEvent.type(await screen.findByLabelText('Agent name'), 'Laptop');
     await userEvent.click(screen.getByRole('button', { name: 'Create key' }));
     await screen.findByText('synthetic-test-secret');
     expect(
@@ -140,158 +275,58 @@ describe('dashboard user flows with gateway contract responses', () => {
           .map((m) => m.state.data),
       ),
     ).not.toContain('synthetic-test-secret');
-    await userEvent.click(screen.getByRole('button', { name: "I've stored it — hide" }));
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(screen.queryByText('synthetic-test-secret')).toBeNull();
+  });
+
+  it('replaces and revokes the key only after confirmation', async () => {
+    await open('/agent');
+    await userEvent.click(await screen.findByRole('button', { name: 'Replace' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Replace key' }));
+    await screen.findByText('synthetic-test-secret');
+    expect(requests).toContainEqual({ path: '/api/keys', method: 'POST' });
     await userEvent.click(screen.getByRole('button', { name: 'Revoke' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Revoke key' }));
     await screen.findByLabelText('Agent name');
+    expect(screen.queryByText('synthetic-test-secret')).toBeNull();
   });
-  it('clears owner data immediately when an approval mutation loses its session', async () => {
-    unauthorizedApproval = true;
-    await open(`/mandates/${intent.id}`);
-    await userEvent.click(await screen.findByRole('button', { name: 'Approve task' }));
-    await screen.findByRole('link', { name: 'Continue with Google' });
-    expect(queryClient.getQueryData(['intents', intent.id])).toBeUndefined();
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
-  });
-  it('clears owner caches when the session expires while a public page is open', async () => {
-    await open('/overview');
-    await screen.findByRole('heading', { name: 'Overview' });
-    await act(async () => {
-      await router.navigate({ to: '/faq' });
-    });
-    await screen.findByRole('heading', { name: 'Frequently asked questions' });
-    loggedIn = false;
-    await act(async () => {
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
-    });
-    await screen.findByRole('link', { name: 'Continue with Google' });
-    expect(queryClient.getQueryData(['operations'])).toBeUndefined();
-  });
-  it('keeps dashboard navigation on FAQ and Contact for signed-in users', async () => {
-    await open('/overview');
-    await userEvent.click(await screen.findByRole('link', { name: 'FAQ' }));
-    await screen.findByRole('heading', { name: 'Frequently asked questions' });
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeTruthy();
-    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
-    await userEvent.click(screen.getByRole('link', { name: 'Contact' }));
-    await screen.findByRole('heading', { name: 'Contact' });
-    expect(screen.getByRole('navigation', { name: 'Primary' })).toBeTruthy();
-  });
-  it('allows anonymous visitors to read FAQ and Contact without dashboard access', async () => {
-    loggedIn = false;
-    await open('/faq');
-    await screen.findByRole('heading', { name: 'Frequently asked questions' });
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
-    await userEvent.click(screen.getByRole('link', { name: 'Contact' }));
-    await screen.findByRole('heading', { name: 'Contact' });
-    expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
-  });
-  it('provides an actionable next step and treats unavailable reviews as service status', async () => {
+});
+
+describe('navigation', () => {
+  it('guides a new account to connect an agent', async () => {
+    keyRecords = [];
+    operations = [];
     intentRecord = { ...intentRecord, status: 'rejected' };
     await open('/overview');
-    const connect = await screen.findByRole('link', { name: 'Connect agent' });
-    const notice = await screen.findByText('Purchase reviews are unavailable');
-    expect(notice.closest('[role="status"]')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
-    await userEvent.click(connect);
+    await screen.findByText('Connect your agent to get started');
+    await userEvent.click(screen.getByRole('link', { name: 'Connect agent' }));
     await screen.findByLabelText('Agent name');
   });
-  it('filters unknown outcomes as pending and flags unimplemented reviews', async () => {
-    await open('/activity?filter=pending_payment');
-    await screen.findByRole('heading', { name: 'Activity' });
-    await screen.findAllByText('Outcome unknown · counts as spent');
-    await userEvent.selectOptions(screen.getByLabelText('View'), 'needs_review');
-    await screen.findByText('Purchase reviews are unavailable');
-    expect(screen.queryByText('synthetic-test-secret')).toBeNull();
-  });
-  it('shows task limits in a table and filters by status and intent', async () => {
-    keyRecords = [key];
-    await open('/mandates');
-    await screen.findByRole('link', { name: 'View task' });
-    expect(screen.getByRole('columnheader', { name: 'Expires' })).toBeTruthy();
-    await userEvent.selectOptions(screen.getByLabelText('Status'), 'active');
-    await screen.findByText('No tasks match your filters');
-    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
-    await userEvent.type(screen.getByRole('searchbox', { name: 'Search intents' }), 'pricing');
-    await userEvent.click(screen.getByRole('link', { name: 'View task' }));
-    await screen.findByRole('button', { name: 'Approve task' });
-  });
-  it('routes extra keys to the plans preview without replacing an active key', async () => {
-    keyRecords = [key];
-    await open('/connect');
-    await userEvent.click(await screen.findByRole('link', { name: 'Add API key' }));
-    await screen.findByRole('heading', { name: 'Plan & usage' });
-    expect(screen.getByText('1 of 1 active API key in use')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Go · Coming soon' })).toHaveProperty(
-      'disabled',
-      true,
-    );
-    expect(requests.some((r) => r.path === '/api/keys' && r.method === 'POST')).toBe(false);
-    await userEvent.click(screen.getByRole('link', { name: 'Wallets' }));
-    await screen.findByRole('cell', { name: /Hackathon wallet/ });
-    expect(screen.getByRole('columnheader', { name: 'Assigned allowance' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Import wallet · Coming soon' })).toHaveProperty(
-      'disabled',
-      true,
-    );
-  });
-  it('combines activity filters and clears them without mixing decision and service', async () => {
-    await open('/activity');
-    await screen.findAllByText('Outcome unknown · counts as spent');
-    await userEvent.selectOptions(screen.getByLabelText('Decision'), 'BLOCK');
-    await screen.findByText('No activity matches your filters');
-    await userEvent.click(screen.getByRole('link', { name: 'Clear filters' }));
-    await screen.findAllByText('Outcome unknown · counts as spent');
-    await userEvent.type(
-      screen.getByRole('searchbox', { name: 'Search activity' }),
-      'not-a-service',
-    );
-    await screen.findByText('No activity matches your filters');
-    expect(screen.queryByText('synthetic-test-secret')).toBeNull();
-  });
-  it('shows read-only admin layouts without inventing user data or calling missing APIs', async () => {
-    await open('/admin');
-    await screen.findByRole('heading', { name: 'Administration' });
-    await screen.findByText('Administrator access is not enabled yet');
-    await userEvent.click(screen.getByRole('link', { name: 'View users layout' }));
-    await screen.findByRole('heading', { name: 'Registered users' });
-    expect(screen.getByRole('columnheader', { name: 'Last login' })).toBeTruthy();
-    expect(screen.queryByRole('link', { name: 'View user' })).toBeNull();
-    await userEvent.click(
-      within(screen.getByRole('navigation', { name: 'Administration' })).getByRole('link', {
-        name: 'Plans & usage',
-      }),
-    );
-    await screen.findByText(/Plan assignments, request metering, billing periods, and quotas/);
-    expect(requests.some((r) => r.path.startsWith('/api/admin'))).toBe(false);
-    expect(requests.some((r) => r.method !== 'GET')).toBe(false);
-  });
-  it('requires a session for admin previews and supports the user detail scaffold', async () => {
-    await open(`/admin/users/${user.id}`);
-    await screen.findByRole('heading', { name: 'User details' });
-    await screen.findByRole('columnheader', { name: 'Key prefix' });
-    loggedIn = false;
-    await act(async () => {
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
-    });
-    await screen.findByRole('link', { name: 'Continue with Google' });
-    expect(screen.queryByRole('heading', { name: 'User details' })).toBeNull();
-  });
-  it('clears private screens after logout and after a session expires', async () => {
+
+  it('keeps FAQ and Contact in the signed-in navigation', async () => {
     await open('/overview');
-    await screen.findByRole('heading', { name: 'Overview' });
-    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
-    await screen.findByRole('link', { name: 'Continue with Google' });
-    expect(screen.queryByRole('heading', { name: 'Overview' })).toBeNull();
-    loggedIn = true;
-    await router.navigate({ to: '/overview' });
-    await queryClient.invalidateQueries();
-    await screen.findByRole('heading', { name: 'Overview' });
+    const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0]!;
+    await userEvent.click(within(nav).getByRole('link', { name: 'FAQ' }));
+    await screen.findByRole('heading', { name: 'FAQ' });
+    await userEvent.click(within(nav).getByRole('link', { name: 'Contact' }));
+    await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+  });
+
+  it('lets visitors read FAQ and Contact without signing in', async () => {
     loggedIn = false;
-    await queryClient.invalidateQueries();
-    await screen.findByRole('link', { name: 'Continue with Google' });
+    await open('/');
+    await userEvent.click(await screen.findByRole('link', { name: 'FAQ' }));
+    await screen.findByRole('heading', { name: 'FAQ' });
     expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
+    await userEvent.click(screen.getByRole('link', { name: 'Contact' }));
+    await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+  });
+
+  it('keeps links from before the redesign working', async () => {
+    await open(`/mandates/${intent.id}`);
+    await screen.findByRole('button', { name: 'Approve task' });
+    expect(router.state.location.pathname).toBe(`/tasks/${intent.id}`);
   });
 });

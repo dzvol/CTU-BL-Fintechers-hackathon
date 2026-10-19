@@ -58,6 +58,11 @@ describe('gateway dashboard boundary', () => {
       );
     }
   });
+  it('asks for reviews by status', async () => {
+    const fetch = answer({ items: [review] });
+    await fetchReviews('pending');
+    expect(fetch).toHaveBeenLastCalledWith('/api/reviews?status=pending', expect.anything());
+  });
   it('reads operation details and sessions, handles 204 logout', async () => {
     answer(user);
     expect(await fetchMe()).toEqual(user);

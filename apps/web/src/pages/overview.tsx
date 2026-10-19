@@ -1,144 +1,152 @@
 import { Link } from '@tanstack/react-router';
-import { useMe, useIntents, useTasks, useOperations, useKeys } from '@/api/hooks';
-import { Button } from '@/components/ui/button';
-import { PageHeader, Panel, KV, Money, ErrorState, Loading, fmtTime } from '@/components/sa/common';
+import { CheckCircle2, Clock, Wallet } from 'lucide-react';
+import { useIntents, useKeys, useOperations, usePending, useTasks } from '@/api/hooks';
+import { ActivityList } from '@/components/sa/activity-list';
 import { CloseTaskButton } from '@/components/sa/close-task-button';
-import { PurchaseTable } from '@/components/sa/purchase-table';
-import { ReviewQueue } from '@/components/sa/review-queue';
+import {
+  Empty,
+  ErrorState,
+  Hint,
+  Loading,
+  Meter,
+  Money,
+  PageHeader,
+  Section,
+} from '@/components/sa/common';
+import { IntentCard } from '@/components/sa/intent-card';
+import { ReviewCard } from '@/components/sa/review-card';
+import { Button } from '@/components/ui/button';
+import { fromNow } from '@/lib/time';
+
 export function Overview() {
-  const me = useMe(),
+  const pending = usePending(),
     intents = useIntents(),
     tasks = useTasks(),
     ops = useOperations(),
     keys = useKeys();
   const active = tasks.data?.find((t) => t.status === 'active');
-  const connected = keys.data?.some((k) => !k.revokedAt) ?? false;
-  const pending = intents.data?.filter((i) => i.status === 'pending_approval') ?? [];
+  const activeIntent = intents.data?.find((i) => i.id === active?.intentId);
+  const agentName = (keyId: string) => keys.data?.find((k) => k.id === keyId)?.name;
+  const hasKey = keys.data?.some((k) => !k.revokedAt);
+  const recent = [...(ops.data ?? [])]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 5);
+  // A new account has nothing to show yet: one clear first step instead of three empty sections.
+  const fresh =
+    keys.data?.length === 0 &&
+    intents.data?.length === 0 &&
+    ops.data?.length === 0 &&
+    pending.count === 0;
+
+  if (fresh)
+    return (
+      <>
+        <PageHeader title="Overview" />
+        <Empty title="Connect your agent to get started">
+          <p>Create a key, add it to Claude Code or Codex, then approve the first task here.</p>
+          <Button asChild size="sm" className="mt-4 h-9">
+            <Link to="/agent">Connect agent</Link>
+          </Button>
+        </Empty>
+      </>
+    );
+
   return (
     <>
-      <PageHeader
-        title="Overview"
-        description="Manage approved tasks and keep track of agent purchases."
-      />
-      {me.data && (
-        <section className="mb-6 rounded-lg border bg-card p-5" aria-label="Allocation">
-          <p className="text-xs text-muted-foreground">Assigned sponsored allocation</p>
-          <Money value={me.data.allocation} className="mt-1 block text-2xl font-semibold" />
-          <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-            Pre-funded allowance · Base Sepolia. Available, reserved and spent balances are not
-            available yet.
-          </p>
-        </section>
-      )}
-      <Panel title={active ? 'Active task' : 'Next step'}>
-        {tasks.isPending ? (
+      <PageHeader title="Overview" />
+
+      <Section title="Waiting for you" count={pending.count}>
+        {pending.isPending ? (
           <Loading />
-        ) : tasks.error ? (
-          <ErrorState error={tasks.error} />
-        ) : active ? (
-          <>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="font-medium">
-                {intents.data?.find((i) => i.id === active.intentId)?.purpose ?? active.id}
-              </p>
-              <CloseTaskButton task={active} />
-            </div>
-            <dl>
-              <KV label="Budget">
-                <Money value={active.budget} />
-              </KV>
-              <KV label="Expires">{fmtTime(active.expiresAt, true)}</KV>
-            </dl>
-            <Button asChild variant="link" className="px-0">
-              <Link to="/mandates/$id" params={{ id: active.intentId }}>
-                View approved task →
-              </Link>
-            </Button>
-          </>
-        ) : keys.isPending ? (
-          <Loading label="Checking your agent connection…" />
-        ) : keys.error ? (
-          <ErrorState error={keys.error} onRetry={() => void keys.refetch()} />
-        ) : (
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-prose">
-              <p className="font-medium">
-                {pending.length
-                  ? 'Review your agent’s proposal'
-                  : connected
-                    ? 'Ready for your next task'
-                    : 'Connect your first agent'}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {pending.length
-                  ? 'Approve a proposed task to let your agent request purchases within its limits.'
-                  : connected
-                    ? 'Ask your connected agent to submit an intent. Its proposal will appear here for approval.'
-                    : 'Create a key and connect Claude Code or Codex. You approve the task before any purchases.'}
-              </p>
-            </div>
-            {pending.length ? (
-              <Button asChild>
-                <Link to="/mandates">Review tasks</Link>
-              </Button>
-            ) : (
-              <Button asChild variant={connected ? 'outline' : 'default'}>
-                <Link to="/connect">{connected ? 'Agent setup' : 'Connect agent'}</Link>
-              </Button>
-            )}
-          </div>
-        )}
-      </Panel>
-      <Panel title="Needs your decision">
-        {intents.isPending ? (
-          <Loading />
-        ) : intents.error ? (
-          <ErrorState error={intents.error} />
-        ) : pending.length ? (
+        ) : pending.error ? (
+          <ErrorState error={pending.error} onRetry={() => void pending.refetch()} />
+        ) : pending.count ? (
           <div className="space-y-3">
-            {pending.map((i) => (
-              <div key={i.id} className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-words font-medium">{i.purpose}</p>
-                  <p className="text-sm text-warning">Intent awaiting approval</p>
-                </div>
-                <Button asChild variant="outline">
-                  <Link to="/mandates/$id" params={{ id: i.id }}>
-                    Review task
-                  </Link>
-                </Button>
-              </div>
+            {pending.reviews.map((r) => (
+              <ReviewCard key={r.id} review={r} />
+            ))}
+            {pending.intents.map((i) => (
+              <IntentCard key={i.id} intent={i} agent={agentName(i.apiKeyId)} />
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No intents awaiting approval.</p>
+          <p className="flex items-center gap-2 rounded-xl border border-dashed px-4 py-4 text-sm text-muted-foreground">
+            <CheckCircle2 className="size-4 text-success" aria-hidden />
+            Nothing to approve.
+          </p>
         )}
-        <ReviewQueue />
-      </Panel>
-      <Panel
-        title="Recent purchase activity"
+      </Section>
+
+      <Section title="Active task">
+        {tasks.isPending || keys.isPending ? (
+          <Loading />
+        ) : tasks.error ? (
+          <ErrorState error={tasks.error} onRetry={() => void tasks.refetch()} />
+        ) : active ? (
+          <article className="rounded-xl border bg-card p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <Link
+                to="/tasks/$id"
+                params={{ id: active.intentId }}
+                className="min-w-0 flex-1 font-medium hover:underline"
+              >
+                {activeIntent?.purpose ?? 'Approved task'}
+              </Link>
+              <CloseTaskButton task={active} />
+            </div>
+            <Meter
+              className="mt-4"
+              total={active.budget}
+              spent={active.spent}
+              reserved={active.reserved}
+            />
+            <p className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Hint label="Spent of budget">
+                  <Wallet className="size-3.5" aria-hidden />
+                </Hint>
+                <Money value={active.spent} unit={false} className="text-foreground" /> /{' '}
+                <Money value={active.budget} />
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Hint label="Task ends">
+                  <Clock className="size-3.5" aria-hidden />
+                </Hint>
+                {fromNow(active.expiresAt)}
+              </span>
+            </p>
+          </article>
+        ) : hasKey ? (
+          <Empty title="No active task">Ask your agent to propose one. It shows up here.</Empty>
+        ) : (
+          <Empty title="Connect your agent to get started">
+            <Button asChild size="sm" className="mt-2 h-9">
+              <Link to="/agent">Connect agent</Link>
+            </Button>
+          </Empty>
+        )}
+      </Section>
+
+      <Section
+        title="Recent activity"
         actions={
-          <Button asChild variant="link">
-            <Link to="/activity">All activity</Link>
-          </Button>
+          recent.length ? (
+            <Button asChild variant="ghost" size="sm" className="h-8">
+              <Link to="/activity">View all</Link>
+            </Button>
+          ) : undefined
         }
       >
         {ops.isPending ? (
           <Loading />
         ) : ops.error ? (
-          <ErrorState error={ops.error} />
-        ) : ops.data?.length ? (
-          <PurchaseTable
-            operations={[...(ops.data ?? [])]
-              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-              .slice(0, 6)}
-            intents={intents.data}
-            tasks={tasks.data}
-          />
+          <ErrorState error={ops.error} onRetry={() => void ops.refetch()} />
+        ) : recent.length ? (
+          <ActivityList operations={recent} />
         ) : (
-          <p className="text-sm text-muted-foreground">No purchase activity yet.</p>
+          <p className="text-sm text-muted-foreground">No purchases yet.</p>
         )}
-      </Panel>
+      </Section>
     </>
   );
 }

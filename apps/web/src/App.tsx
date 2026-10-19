@@ -1,33 +1,44 @@
 import { lazy, Suspense } from 'react';
-import { Loading } from './components/sa/common';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createRootRoute,
   createRoute,
   createRouter,
-  Outlet,
-  RouterProvider,
   Link,
+  Outlet,
+  redirect,
+  RouterProvider,
 } from '@tanstack/react-router';
-import { SessionBoundary } from './components/sa/session-boundary';
+import { Loading } from './components/sa/common';
 import { OwnerLayout } from './components/sa/owner-layout';
-import { Activity, FILTERS, type ActivityFilter } from './pages/activity';
-import { Faq, Contact } from './pages/information';
-import { Administration } from './pages/admin';
-import { Wallets, Plans } from './pages/account';
+import { SessionBoundary } from './components/sa/session-boundary';
 import { Toaster } from './components/ui/sonner';
+import { FILTERS, type ActivityFilter } from './lib/filters';
 import './styles.css';
 
-const SignIn = lazy(() => import('./pages/sign-in').then((m) => ({ default: m.SignIn })));
-const Overview = lazy(() => import('./pages/overview').then((m) => ({ default: m.Overview })));
-const Tasks = lazy(() => import('./pages/tasks').then((m) => ({ default: m.Tasks })));
-const TaskDetail = lazy(() =>
-  import('./pages/task-detail').then((m) => ({ default: m.TaskDetail })),
-);
-const PurchaseDetail = lazy(() =>
-  import('./pages/purchase-detail').then((m) => ({ default: m.PurchaseDetail })),
-);
-const Connect = lazy(() => import('./pages/connect').then((m) => ({ default: m.Connect })));
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })));
+const SignIn = page(() => import('./pages/sign-in'), 'SignIn');
+const Overview = page(() => import('./pages/overview'), 'Overview');
+const Activity = page(() => import('./pages/activity'), 'Activity');
+const PurchaseDetail = page(() => import('./pages/purchase-detail'), 'PurchaseDetail');
+const Tasks = page(() => import('./pages/tasks'), 'Tasks');
+const TaskDetail = page(() => import('./pages/task-detail'), 'TaskDetail');
+const Agent = page(() => import('./pages/agent'), 'Agent');
+const Faq = page(() => import('./pages/information'), 'Faq');
+const Contact = page(() => import('./pages/information'), 'Contact');
+
+function Message({ title, action }: { title: string; action: React.ReactNode }) {
+  return (
+    <main className="grid min-h-screen place-items-center p-8 text-center">
+      <div>
+        <h1 className="text-xl font-semibold">{title}</h1>
+        <p className="mt-3 text-sm">{action}</p>
+      </div>
+    </main>
+  );
+}
+
 const root = createRootRoute({
   component: () => (
     <SessionBoundary>
@@ -37,20 +48,24 @@ const root = createRootRoute({
     </SessionBoundary>
   ),
   notFoundComponent: () => (
-    <main className="p-8">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
-      <Link to="/" className="text-primary underline">
-        Go home
-      </Link>
-    </main>
+    <Message
+      title="Page not found"
+      action={
+        <Link to="/overview" className="text-primary hover:underline">
+          Go to overview
+        </Link>
+      }
+    />
   ),
   errorComponent: () => (
-    <main className="p-8">
-      <h1 className="text-2xl font-semibold">This page didn't load</h1>
-      <a href="/" className="text-primary underline">
-        Return to sign in
-      </a>
-    </main>
+    <Message
+      title="This page didn't load"
+      action={
+        <a href="/overview" className="text-primary hover:underline">
+          Reload the dashboard
+        </a>
+      }
+    />
   ),
 });
 const signIn = createRoute({
@@ -66,28 +81,17 @@ const overview = createRoute({
   path: '/overview',
   component: Overview,
 });
-const tasks = createRoute({ getParentRoute: () => owner, path: '/mandates', component: Tasks });
-const task = createRoute({
-  getParentRoute: () => owner,
-  path: '/mandates/$id',
-  component: TaskDetail,
-});
-const activity = createRoute({
-  getParentRoute: () => owner,
-  path: '/activity',
-  component: Activity,
-  validateSearch: (s: Record<string, unknown>): { filter?: ActivityFilter } => ({
-    filter: FILTERS.find((f) => f.id === s.filter)?.id ?? 'all',
-  }),
-});
 const purchase = createRoute({
   getParentRoute: () => owner,
   path: '/activity/$id',
   component: PurchaseDetail,
 });
-const connect = createRoute({ getParentRoute: () => owner, path: '/connect', component: Connect });
-const wallets = createRoute({ getParentRoute: () => owner, path: '/wallets', component: Wallets });
-const plans = createRoute({ getParentRoute: () => owner, path: '/plans', component: Plans });
+const tasks = createRoute({ getParentRoute: () => owner, path: '/tasks', component: Tasks });
+const task = createRoute({
+  getParentRoute: () => owner,
+  path: '/tasks/$id',
+  component: TaskDetail,
+});
 const faq = createRoute({
   getParentRoute: () => owner,
   path: '/faq',
@@ -100,51 +104,45 @@ const contact = createRoute({
   component: Contact,
   staticData: { public: true },
 });
-const admin = createRoute({
+const agent = createRoute({ getParentRoute: () => owner, path: '/agent', component: Agent });
+const activity = createRoute({
   getParentRoute: () => owner,
-  path: '/admin',
-  component: Administration,
+  path: '/activity',
+  component: Activity,
+  validateSearch: (s: Record<string, unknown>): { filter?: ActivityFilter } => ({
+    filter: FILTERS.find((f) => f.id === s.filter)?.id ?? 'all',
+  }),
 });
-const adminUsers = createRoute({
-  getParentRoute: () => owner,
-  path: '/admin/users',
-  component: Administration,
-});
-const adminUser = createRoute({
-  getParentRoute: () => owner,
-  path: '/admin/users/$id',
-  component: Administration,
-});
-const adminPlans = createRoute({
-  getParentRoute: () => owner,
-  path: '/admin/plans',
-  component: Administration,
-});
-const adminActivity = createRoute({
-  getParentRoute: () => owner,
-  path: '/admin/activity',
-  component: Administration,
-});
+// Links from before the redesign (agent skill, bookmarks) keep working.
+const moved = [
+  createRoute({
+    getParentRoute: () => root,
+    path: '/mandates',
+    beforeLoad: () => {
+      throw redirect({ to: '/tasks' });
+    },
+  }),
+  createRoute({
+    getParentRoute: () => root,
+    path: '/mandates/$id',
+    beforeLoad: ({ params }) => {
+      throw redirect({ to: '/tasks/$id', params });
+    },
+  }),
+  createRoute({
+    getParentRoute: () => root,
+    path: '/connect',
+    beforeLoad: () => {
+      throw redirect({ to: '/agent' });
+    },
+  }),
+];
+
 export const router = createRouter({
   routeTree: root.addChildren([
     signIn,
-    owner.addChildren([
-      admin,
-      adminUsers,
-      adminUser,
-      adminPlans,
-      adminActivity,
-      overview,
-      tasks,
-      task,
-      activity,
-      purchase,
-      connect,
-      wallets,
-      plans,
-      faq,
-      contact,
-    ]),
+    ...moved,
+    owner.addChildren([overview, activity, purchase, tasks, task, agent, faq, contact]),
   ]),
   scrollRestoration: true,
 });
@@ -163,7 +161,7 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
-      <Toaster position="top-center" richColors />
+      <Toaster position="bottom-right" />
     </QueryClientProvider>
   );
 }
