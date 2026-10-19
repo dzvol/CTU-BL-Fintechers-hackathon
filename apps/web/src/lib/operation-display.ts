@@ -6,7 +6,7 @@ export function paymentLabel(op: Operation): string {
   if (op.reason === 'free_content') return 'Free · no payment';
   switch (op.state) {
     case 'blocked':
-      return 'Blocked before payment';
+      return 'Not paid';
     case 'awaiting_review':
       return 'Awaiting review · unsigned';
     case 'reserved':

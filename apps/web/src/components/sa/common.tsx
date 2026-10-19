@@ -1,4 +1,4 @@
-import { AlertCircle, Loader2, WifiOff } from 'lucide-react';
+import { AlertCircle, Info, Loader2, WifiOff } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { formatUsdc } from '@semanticauth/contracts';
 import { Button } from '../ui/button';
@@ -84,27 +84,55 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
     </div>
   );
 }
-export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+export function ErrorState({
+  error,
+  onRetry,
+  unavailableTitle = 'This feature is unavailable',
+}: {
+  error: unknown;
+  onRetry?: () => void;
+  unavailableTitle?: string;
+}) {
   const offline = error instanceof ApiError && error.status === 0;
   const unsupported = error instanceof ApiError && error.status === 501;
-  const Icon = offline ? WifiOff : AlertCircle;
+  const Icon = offline ? WifiOff : unsupported ? Info : AlertCircle;
   return (
     <div
-      role="alert"
-      className="flex items-start gap-3 rounded-md border border-destructive/30 bg-danger-soft p-4 text-sm"
+      role={unsupported ? 'status' : 'alert'}
+      className={cn(
+        'flex items-start gap-3 rounded-md border p-4 text-sm',
+        unsupported ? 'bg-muted' : 'border-destructive/30 bg-danger-soft',
+      )}
     >
-      <Icon className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+      <Icon
+        className={cn(
+          'mt-0.5 size-4 shrink-0',
+          unsupported ? 'text-muted-foreground' : 'text-destructive',
+        )}
+        aria-hidden
+      />
       <div className="min-w-0 flex-1">
         <p className="font-medium">
-          {unsupported
-            ? 'Not supported by the backend yet'
-            : offline
-              ? 'Gateway unavailable'
-              : "Couldn't load"}
+          {unsupported ? unavailableTitle : offline ? 'Gateway unavailable' : "Couldn't load"}
         </p>
-        <p>{error instanceof Error ? error.message : 'An unexpected error occurred.'}</p>
+        {unsupported ? (
+          <>
+            <p className="mt-1 text-muted-foreground">
+              This feature is not available on this gateway yet. You can continue using the rest of
+              the dashboard.
+            </p>
+            <details className="mt-2">
+              <summary className="min-h-6 cursor-pointer text-xs text-muted-foreground">
+                Technical details
+              </summary>
+              <p className="mt-1 break-words font-mono text-xs">{error.message}</p>
+            </details>
+          </>
+        ) : (
+          <p>{error instanceof Error ? error.message : 'An unexpected error occurred.'}</p>
+        )}
       </div>
-      {onRetry && (
+      {onRetry && !unsupported && (
         <Button size="sm" variant="outline" onClick={onRetry}>
           Retry
         </Button>

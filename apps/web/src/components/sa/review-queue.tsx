@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Review } from '@semanticauth/contracts';
 import { toast } from 'sonner';
+import { useExpiredAt } from '@/hooks/use-expired-at';
 import { useReviews } from '@/api/hooks';
 import { approveReview, rejectReview } from '@/api/reviews';
 import {
@@ -22,7 +23,11 @@ export function ReviewQueue() {
       {q.isPending ? (
         <Loading label="Checking purchase reviews…" />
       ) : q.error ? (
-        <ErrorState error={q.error} onRetry={() => void q.refetch()} />
+        <ErrorState
+          error={q.error}
+          onRetry={() => void q.refetch()}
+          unavailableTitle="Purchase reviews are unavailable"
+        />
       ) : (
         (q.data ?? [])
           .filter((r) => r.status === 'pending')
@@ -44,22 +49,29 @@ export function ReviewQueue() {
 export function PurchaseReviewDialog({ review }: { review: Review }) {
   const [open, setOpen] = useState(false),
     qc = useQueryClient();
+  const [seen, setSeen] = useState(review);
+  const changed = JSON.stringify(seen) !== JSON.stringify(review);
+  const expired = useExpiredAt(seen.expiresAt, open);
   const action = useMutation({
-    mutationFn: (decision: 'approve' | 'reject') =>
-      decision === 'approve' ? approveReview(review.id) : rejectReview(review.id),
+    mutationFn: (decision: 'approve' | 'reject') => {
+      if (changed || Date.parse(seen.expiresAt) <= Date.now() || review.status !== 'pending') {
+        throw new Error('This review changed or expired. Load the latest offer before deciding.');
+      }
+      return decision === 'approve' ? approveReview(seen.id) : rejectReview(seen.id);
+    },
     onSuccess: () => {
       setOpen(false);
       void qc.invalidateQueries();
       toast.success('Review decision recorded.');
     },
   });
-  const expired = Date.parse(review.expiresAt) <= Date.now();
-  const disabled = action.isPending || review.status !== 'pending' || expired;
+  const disabled = action.isPending || review.status !== 'pending' || expired || changed;
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
+        if (o) setSeen(structuredClone(review));
         action.reset();
       }}
     >
@@ -76,34 +88,49 @@ export function PurchaseReviewDialog({ review }: { review: Review }) {
         </DialogHeader>
         <section className="border-l-4 border-warning bg-warning-soft p-3 text-sm">
           <h2 className="font-semibold">Backend decision reason</h2>
-          <p>{review.reason}</p>
+          <p>{seen.reason}</p>
         </section>
         <dl>
           <KV label="Operation" mono>
-            {review.operationId}
+            {seen.operationId}
           </KV>
           <KV label="Resource" stackOnMobile mono>
-            {review.offer.resourceUrl}
+            {seen.offer.resourceUrl}
           </KV>
           <KV label="Recipient" mono>
-            {review.offer.payTo}
+            {seen.offer.payTo}
           </KV>
           <KV label="Quoted amount">
-            <Money value={review.offer.amount} />
+            <Money value={seen.offer.amount} />
           </KV>
-          <KV label="Network">{review.offer.network}</KV>
-          <KV label="Expires">{fmtTime(review.expiresAt, true)}</KV>
+          <KV label="Network">{seen.offer.network}</KV>
+          <KV label="Expires">{fmtTime(seen.expiresAt, true)}</KV>
           <KV label="Review ID" mono>
-            {review.id}
+            {seen.id}
           </KV>
         </dl>
-        {review.offer.description && (
+        {seen.offer.description && (
           <figure className="rounded border border-dashed p-3 text-sm">
             <figcaption className="mb-1 text-xs text-muted-foreground">
               Provider description · untrusted content
             </figcaption>
-            <blockquote>{review.offer.description}</blockquote>
+            <blockquote>{seen.offer.description}</blockquote>
           </figure>
+        )}
+        {changed && (
+          <div role="alert" className="border-l-4 border-warning bg-warning-soft p-3 text-sm">
+            <p>The review changed. Check the latest offer before deciding.</p>
+            <Button
+              variant="outline"
+              disabled={action.isPending}
+              onClick={() => {
+                setSeen(structuredClone(review));
+                action.reset();
+              }}
+            >
+              Load latest offer
+            </Button>
+          </div>
         )}
         {expired && <p role="status">This review has expired.</p>}
         {action.error && <ErrorState error={action.error} />}

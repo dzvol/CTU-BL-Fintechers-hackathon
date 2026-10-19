@@ -56,6 +56,16 @@ Manual local browser verification used the real gateway app with its existing in
 
 Repository-wide typecheck passes. The full test run has an existing failure in `apps/gateway/src/adapters/x402/x402-transport.test.ts`: the repeatable-payment-body test expects content directly but the normalizer receives `{ data: content }`. Payment-area source/tests are unchanged. Root `README.md` also has a pre-existing Prettier warning; web formatting passes.
 
+## Refactor review — 19 October 2026
+
+Three high-impact findings were addressed without changing backend contracts or the UI layout:
+
+- Session expiry cleanup was tied to the owner layout and query failures, leaving mutation 401 responses and expiry on public pages uncovered. `SessionBoundary` now owns query/mutation expiry cleanup outside lazy route content; the owner layout only guards its own rendering.
+- Polling could replace an open review's displayed offer before the owner decided. The dialog now snapshots the displayed review, blocks decisions if the response changes, and requires explicit acknowledgement of the latest offer. An independent deadline timer disables expired confirmations without a polling response. The gateway must still enforce review identity and immutability server-side.
+- Key creation returned the full credential into React Query's mutation cache. Only public key metadata is now returned to that cache; the one-time secret stays in local component state and is removed when hidden or unmounted.
+
+Regression tests cover mutation 401 cleanup, public-page session expiry, absence of credentials from mutation results, changing review terms and deadline expiry. Smaller cleanup and broader router restructuring were deferred because they do not address comparable correctness risks.
+
 ## Added dependencies
 
 Runtime: `@tanstack/react-router`, `@tanstack/react-query`, `@radix-ui/react-alert-dialog`, `@radix-ui/react-dialog`, `@radix-ui/react-label`, `@radix-ui/react-slot`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`, `sonner`, `tw-animate-css`.
@@ -63,3 +73,14 @@ Runtime: `@tanstack/react-router`, `@tanstack/react-query`, `@radix-ui/react-ale
 Development: `tailwindcss`, `@tailwindcss/vite`, `@testing-library/react`, `@testing-library/user-event`, `jsdom`.
 
 Outside `apps/web`, only the npm-generated root `package-lock.json` changes. No shared contract, gateway, deployment, repository remote or environment configuration changes are included.
+
+## Simplified dashboard layouts — 19 October 2026
+
+- Tasks use a sortable-by-recency table with intent, agent, status, budget, creation, expiry and a detail link. Search, status, agent and creation-date filters combine locally over gateway responses.
+- Activity separates service identity from the decision badge. Search, view and decision are immediately available; More filters exposes payment, delivery, task and date range. Clear filters resets the complete selection. Existing view URLs remain supported.
+- Agents show an overview table, one-time key creation/copy, confirmed revocation, and onboarding through `/agent-skill.md`. Manual configuration is collapsed. The skill is a static public document without credentials; localhost links require the agent to run on the same machine. Its workflow has not been exercised with a live external agent.
+- With an active key, Add API key navigates to `/plans` without calling key creation. The gateway still enforces one active key and revokes the old key on replacement. This UI is not subscription enforcement.
+- `/wallets` presents the assigned allocation from `/api/me` as a hackathon spending allowance, not an on-chain wallet balance. Wallet import/create and many-to-many agent/wallet connections are marked coming soon; no wallet objects or bindings are fabricated through API adapters.
+- `/plans` shows Free access and proposed Go ($5/month, 3 keys, 10,000 requests) and Pro previews. Paid actions are disabled and marked coming soon. Backend billing, authoritative plan/usage data, quota enforcement, additional active keys and wallet relationship APIs must be added by the gateway owner before these features can be enabled.
+
+Hosting must preserve SPA fallback for `/wallets` and `/plans` as well as the existing dashboard routes, and serve `/agent-skill.md` as a static file. No new dependencies or shared-contract changes were introduced for this layout update.

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, useNavigate } from '@tanstack/react-router';
+import { Link, Outlet, useNavigate, useMatches } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  Wallet,
+  CreditCard,
   Clock3,
   FileText,
   Home,
@@ -21,11 +23,14 @@ import { logout } from '@/api/auth';
 import { ApiError } from '@/api/http';
 import { Loading, ErrorState, Money } from './common';
 import { Logo } from './logo';
+import { PublicShell } from './public-shell';
 const NAV = [
   { to: '/overview', label: 'Overview', icon: Home },
   { to: '/mandates', label: 'Tasks', icon: FileText },
   { to: '/activity', label: 'Activity', icon: Clock3 },
-  { to: '/connect', label: 'Agent', icon: UserRound },
+  { to: '/connect', label: 'Agents', icon: UserRound },
+  { to: '/wallets', label: 'Wallets', icon: Wallet },
+  { to: '/plans', label: 'Plan & usage', icon: CreditCard },
   { to: '/faq', label: 'FAQ', icon: CircleHelp },
   { to: '/contact', label: 'Contact', icon: Mail },
 ] as const;
@@ -34,7 +39,10 @@ function NavLinks({ collapsed = false, onClick }: { collapsed?: boolean; onClick
     <nav aria-label="Primary">
       <ul className="space-y-2">
         {NAV.map((n) => (
-          <li key={n.to}>
+          <li
+            key={n.to}
+            className={n.to === '/faq' ? 'mt-8 border-t border-sidebar-border pt-5' : undefined}
+          >
             <Link
               to={n.to}
               onClick={onClick}
@@ -52,6 +60,9 @@ function NavLinks({ collapsed = false, onClick }: { collapsed?: boolean; onClick
   );
 }
 export function OwnerLayout() {
+  const publicPage = useMatches({
+    select: (matches) => matches.some((match) => match.staticData.public === true),
+  });
   const me = useMe(),
     navigate = useNavigate(),
     qc = useQueryClient();
@@ -67,31 +78,21 @@ export function OwnerLayout() {
     onError: (e) => toast.error(e.message),
   });
   const expired = me.data === null || (me.error instanceof ApiError && me.error.status === 401);
-  // A 401 anywhere in the dashboard invalidates the owner's cached data.
-  useEffect(
-    () =>
-      qc.getQueryCache().subscribe((event) => {
-        const error = event.query.state.error;
-        if (error instanceof ApiError && error.status === 401) {
-          void qc.cancelQueries().then(() => {
-            qc.clear();
-            void navigate({ to: '/', search: { expired: true }, replace: true });
-          });
-        }
-      }),
-    [qc, navigate],
-  );
   useEffect(() => {
-    if (expired) {
-      qc.clear();
+    if (expired && !publicPage)
       void navigate({ to: '/', search: { expired: true }, replace: true });
-    }
-  }, [expired, qc, navigate]);
+  }, [expired, publicPage, navigate]);
   if (me.isPending)
     return (
       <main className="p-8">
         <Loading />
       </main>
+    );
+  if (publicPage && !me.data)
+    return (
+      <PublicShell>
+        <Outlet />
+      </PublicShell>
     );
   if (me.error)
     return (
@@ -150,7 +151,10 @@ export function OwnerLayout() {
                   <NavLinks onClick={() => setMobile(false)} />
                 </SheetContent>
               </Sheet>
-              <span className="truncate text-sm text-muted-foreground">
+              <span className="sm:hidden">
+                <Logo />
+              </span>
+              <span className="hidden truncate text-sm text-muted-foreground sm:inline">
                 {me.data.name ?? me.data.email}
               </span>
             </div>

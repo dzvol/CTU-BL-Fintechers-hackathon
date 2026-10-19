@@ -2,7 +2,7 @@ import { PublicShell } from '@/components/sa/public-shell';
 import { PageHeader, Unsupported } from '@/components/sa/common';
 export function Faq() {
   return (
-    <PublicShell>
+    <>
       <PageHeader title="Frequently asked questions" />
       <section className="space-y-6">
         <div>
@@ -41,18 +41,18 @@ export function Faq() {
           </p>
         </div>
       </section>
-    </PublicShell>
+    </>
   );
 }
 export function Contact() {
   return (
-    <PublicShell>
+    <>
       <PageHeader title="Contact" description="Ask your hackathon team for support." />
       <Unsupported>
         Contact submission is not connected. The gateway does not expose a contact endpoint; no
         message will be sent from this page.
       </Unsupported>
-    </PublicShell>
+    </>
   );
 }
 export function AdminUnavailable() {

@@ -27,7 +27,14 @@ export function StatusBadge({ value }: { value: string }) {
       )}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden />
-      {value.replaceAll('_', ' ')}
+      {(
+        {
+          ALLOW: 'Allowed',
+          BLOCK: 'Blocked',
+          REVIEW: 'Needs approval',
+          pending_approval: 'Awaiting approval',
+        } as Record<string, string>
+      )[value] ?? value.replaceAll('_', ' ')}
     </span>
   );
 }

@@ -34,18 +34,11 @@ export function SignIn() {
           <a href={LOGIN_URL}>Continue with Google</a>
         </Button>
       )}
-      <p className="mt-3 text-sm text-muted-foreground">
-        Local Google sign-in requires the gateway's GOOGLE_* configuration.
-      </p>
       <Unsupported>
         Email magic links and demo admission codes are not supported. This app uses the gateway's
         Google session.
       </Unsupported>
       <div className="mt-7 border-t pt-5 text-sm text-muted-foreground">
-        <p>
-          Purchases use a shared sponsor-funded wallet. Signing in again does not replenish an
-          allocation.
-        </p>
         <nav aria-label="Information" className="mt-4 flex gap-4">
           <Link to="/faq" className="text-primary">
             FAQ

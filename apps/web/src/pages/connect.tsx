@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreatedApiKey } from '@semanticauth/contracts';
@@ -19,6 +20,14 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { PageHeader, ErrorState, Loading, fmtTime } from '@/components/sa/common';
 export function Connect() {
   const keys = useKeys(),
@@ -27,9 +36,13 @@ export function Connect() {
     [created, setCreated] = useState<CreatedApiKey | null>(null);
   const create = useMutation({
     gcTime: 0,
-    mutationFn: () => createApiKey(name),
-    onSuccess: (result) => {
+    mutationFn: async () => {
+      const result = await createApiKey(name);
       setCreated(result);
+      // React Query retains mutation results; only return public metadata to that cache.
+      return result.apiKey;
+    },
+    onSuccess: () => {
       setName('');
       void qc.invalidateQueries();
     },
@@ -46,58 +59,100 @@ export function Connect() {
   return (
     <>
       <PageHeader
-        title="Connect agent"
-        description="Claude Code or Codex · one active key, one active task"
+        title="Agents"
+        description="Connect an agent, manage its key, and revoke access anytime."
+        actions={
+          active.length ? (
+            <Button asChild variant="outline">
+              <Link to="/plans">Add API key</Link>
+            </Button>
+          ) : undefined
+        }
       />
       <section className="mb-8 border-b pb-7">
-        <h2 className="mb-4 text-lg font-semibold">1. Create your agent key</h2>
+        <h2 className="mb-4 text-lg font-semibold">
+          {active.length ? 'Connected agents' : 'Connect your first agent'}
+        </h2>
         {keys.isPending ? (
           <Loading />
         ) : keys.error ? (
           <ErrorState error={keys.error} onRetry={() => void keys.refetch()} />
         ) : active.length ? (
-          <div className="space-y-3">
-            {active.map((k) => (
-              <div key={k.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                <div className="min-w-0">
-                  <p className="break-words font-semibold">
-                    {k.name} <span className="text-sm text-success">· Active</span>
-                  </p>
-                  <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
-                    {k.prefix}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Created {fmtTime(k.createdAt, true)}
-                    {k.lastUsedAt && ` · Last used ${fmtTime(k.lastUsedAt, true)}`}
-                  </p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline">Revoke</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Revoke this agent key?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        The agent loses access and its active task closes. Already-issued payments
-                        may still complete.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Keep key</AlertDialogCancel>
-                      <AlertDialogAction
-                        disabled={revoke.isPending}
-                        onClick={() => revoke.mutate(k.id)}
-                      >
-                        Revoke key
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            ))}
-            <p className="text-sm text-muted-foreground">
-              Revoke the existing key before creating another.
+          <div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {['Agent', 'Wallet', 'API key', 'Last used', 'Status', 'Actions'].map((h) => (
+                    <TableHead
+                      scope="col"
+                      key={h}
+                      className={
+                        ['Wallet', 'Last used', 'Status'].includes(h)
+                          ? 'hidden md:table-cell'
+                          : undefined
+                      }
+                    >
+                      {h}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {active.map((k) => (
+                  <TableRow key={k.id}>
+                    <TableCell className="max-w-48 break-words font-medium">
+                      {k.name}
+                      <span className="mt-1 block text-xs font-normal text-muted-foreground md:hidden">
+                        Active
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Link to="/wallets" className="text-primary hover:underline">
+                        Hackathon wallet
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{k.prefix}…</TableCell>
+                    <TableCell className="hidden text-xs md:table-cell">
+                      {k.lastUsedAt ? fmtTime(k.lastUsedAt, true) : 'Not used yet'}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">Active</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Button asChild variant="ghost" size="sm">
+                          <a href="#agent-setup">Setup</a>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline">Revoke</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Revoke this agent key?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                The agent loses access and its active task closes. Already-issued
+                                payments may still complete.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep key</AlertDialogCancel>
+                              <AlertDialogAction
+                                disabled={revoke.isPending}
+                                onClick={() => revoke.mutate(k.id)}
+                              >
+                                Revoke key
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <p className="mt-4 text-sm text-muted-foreground">
+              1 of 1 active API key in use. Additional keys are coming soon with paid plans. To
+              replace a lost key, revoke it and create a new one.
             </p>
           </div>
         ) : (
@@ -174,38 +229,59 @@ export function Connect() {
           </div>
         )}
         <p className="mt-4 text-sm text-muted-foreground">
-          Agent keys cannot approve intents or purchase reviews. The secret stays in this screen's
-          memory until hidden or you navigate away.
+          You approve tasks and purchase reviews in the dashboard. Agents cannot approve their own
+          spending.
         </p>
       </section>
-      <section className="min-w-0 border-b pb-7">
-        <h2 className="mb-3 text-lg font-semibold">2. Configure your existing agent</h2>
-        <p className="mb-4 text-sm text-muted-foreground">
-          The gateway provides Streamable HTTP MCP at http://localhost:8787/mcp. Store the key
-          securely in your agent's environment.
+      <section id="agent-setup" className="scroll-mt-24" aria-labelledby="setup-title">
+        <h2 id="setup-title" className="text-lg font-semibold">
+          Give your agent the skill. It handles setup.
+        </h2>
+        <ol className="mt-4 max-w-2xl list-inside list-decimal space-y-3 text-sm">
+          <li>Create your agent key above and store it securely.</li>
+          <li>Give your agent the onboarding skill link below.</li>
+          <li>Let it guide you through connecting, then approve its first task here.</li>
+        </ol>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  new URL('/agent-skill.md', window.location.origin).href,
+                );
+                toast.success('Skill link copied.');
+              } catch {
+                toast.error('Open the skill and copy its link manually.');
+              }
+            }}
+          >
+            <Copy aria-hidden />
+            Copy skill link
+          </Button>
+          <Button asChild variant="ghost">
+            <a href="/agent-skill.md" target="_blank" rel="noreferrer">
+              Read onboarding skill
+            </a>
+          </Button>
+        </div>
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+          The skill link contains no credentials. Let your agent guide you to store the key in its
+          local environment; never put it in a URL or commit it to Git. A localhost link works only
+          on this computer.
         </p>
-        <h3 className="mb-2 text-sm font-medium">Codex · ~/.codex/config.toml</h3>
-        <Code>{`[mcp_servers.semanticauth]\nurl = "http://localhost:8787/mcp"\nbearer_token_env_var = "SEMANTICAUTH_API_KEY"`}</Code>
-        <h3 className="mb-2 mt-5 text-sm font-medium">Claude Code</h3>
-        <Code>{`claude mcp add --transport http semanticauth http://localhost:8787/mcp \\\n  --header "Authorization: Bearer $SEMANTICAUTH_API_KEY"`}</Code>
-      </section>
-      <section className="pt-7">
-        <h2 className="mb-3 text-lg font-semibold">3. Propose a task, then wait for approval</h2>
-        <dl className="grid gap-4 sm:grid-cols-2">
-          {[
-            ['get_intent_template', 'Read the required intent fields.'],
-            ['submit_intent', 'Propose a structured purpose and purchase limits.'],
-            ['get_intent_status', 'Wait for the owner’s approval, then read the created task.'],
-            ['get_task', 'Read the active task.'],
-            ['paid_fetch', 'Fetch a compatible service through the gateway.'],
-            ['check_review', 'Poll a purchase review. This service is not implemented yet.'],
-          ].map(([tool, text]) => (
-            <div key={tool}>
-              <dt className="font-mono text-sm font-medium">{tool}</dt>
-              <dd className="mt-1 text-sm text-muted-foreground">{text}</dd>
-            </div>
-          ))}
-        </dl>
+        <details className="mt-7 border-t pt-4">
+          <summary className="min-h-11 cursor-pointer text-sm font-medium">Manual setup</summary>
+          <p className="mb-4 text-sm text-muted-foreground">
+            For local development, the gateway MCP endpoint is http://localhost:8787/mcp. Store the
+            key as SEMANTICAUTH_API_KEY in your agent environment.
+          </p>
+          <h3 className="mb-2 text-sm font-medium">Codex · ~/.codex/config.toml</h3>
+          <Code>{`[mcp_servers.semanticauth]\nurl = "http://localhost:8787/mcp"\nbearer_token_env_var = "SEMANTICAUTH_API_KEY"`}</Code>
+          <p className="mt-4 text-sm text-muted-foreground">
+            The skill includes Claude Code setup and the task approval workflow.
+          </p>
+        </details>
       </section>
     </>
   );

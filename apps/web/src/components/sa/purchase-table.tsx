@@ -36,14 +36,15 @@ export function PurchaseTable({
                 <span className="text-xs">Amount not reported</span>
               )}
             </div>
+            <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+              {new URL(op.url).pathname}
+            </p>
             <p className="my-2 break-words text-xs text-muted-foreground">
-              {fmtTime(op.createdAt)} · {purpose(op)}
+              <time dateTime={op.createdAt}>{fmtTime(op.createdAt, true)}</time> · {purpose(op)}
             </p>
             <dl>
-              <dt className="sr-only">Operation state</dt>
-              <dd>
-                <StatusBadge value={op.state} />
-              </dd>
+              <dt className="text-xs text-muted-foreground">Decision</dt>
+              <dd>{op.verdict ? <StatusBadge value={op.verdict} /> : 'Not reported'}</dd>
               <dt className="mt-2 text-xs text-muted-foreground">Payment</dt>
               <dd className="text-sm">{paymentLabel(op)}</dd>
               <dt className="mt-2 text-xs text-muted-foreground">Delivery</dt>
@@ -67,7 +68,12 @@ export function PurchaseTable({
             {operations.map((op) => (
               <TableRow key={op.id}>
                 <TableCell className="whitespace-nowrap font-mono text-xs">
-                  {fmtTime(op.createdAt)}
+                  <time dateTime={op.createdAt} title={fmtTime(op.createdAt, true)}>
+                    {fmtTime(op.createdAt)}
+                    <span className="mt-1 block text-muted-foreground">
+                      {new Date(op.createdAt).toLocaleDateString(undefined, { dateStyle: 'short' })}
+                    </span>
+                  </time>
                 </TableCell>
                 <TableCell>
                   <Link
@@ -77,8 +83,11 @@ export function PurchaseTable({
                   >
                     {operationHost(op)}
                   </Link>
-                  <span className="mt-1 block">
-                    <StatusBadge value={op.state} />
+                  <span
+                    className="mt-1 block max-w-56 truncate font-mono text-xs text-muted-foreground"
+                    title={op.url}
+                  >
+                    {new URL(op.url).pathname}
                   </span>
                 </TableCell>
                 <TableCell className="max-w-48 truncate text-xs" title={purpose(op)}>

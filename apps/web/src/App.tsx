@@ -9,9 +9,11 @@ import {
   RouterProvider,
   Link,
 } from '@tanstack/react-router';
+import { SessionBoundary } from './components/sa/session-boundary';
 import { OwnerLayout } from './components/sa/owner-layout';
 import { Activity, FILTERS, type ActivityFilter } from './pages/activity';
 import { Faq, Contact, AdminUnavailable } from './pages/information';
+import { Wallets, Plans } from './pages/account';
 import { Toaster } from './components/ui/sonner';
 import './styles.css';
 
@@ -27,9 +29,11 @@ const PurchaseDetail = lazy(() =>
 const Connect = lazy(() => import('./pages/connect').then((m) => ({ default: m.Connect })));
 const root = createRootRoute({
   component: () => (
-    <Suspense fallback={<Loading />}>
-      <Outlet />
-    </Suspense>
+    <SessionBoundary>
+      <Suspense fallback={<Loading />}>
+        <Outlet />
+      </Suspense>
+    </SessionBoundary>
   ),
   notFoundComponent: () => (
     <main className="p-8">
@@ -81,8 +85,20 @@ const purchase = createRoute({
   component: PurchaseDetail,
 });
 const connect = createRoute({ getParentRoute: () => owner, path: '/connect', component: Connect });
-const faq = createRoute({ getParentRoute: () => root, path: '/faq', component: Faq });
-const contact = createRoute({ getParentRoute: () => root, path: '/contact', component: Contact });
+const wallets = createRoute({ getParentRoute: () => owner, path: '/wallets', component: Wallets });
+const plans = createRoute({ getParentRoute: () => owner, path: '/plans', component: Plans });
+const faq = createRoute({
+  getParentRoute: () => owner,
+  path: '/faq',
+  component: Faq,
+  staticData: { public: true },
+});
+const contact = createRoute({
+  getParentRoute: () => owner,
+  path: '/contact',
+  component: Contact,
+  staticData: { public: true },
+});
 const admin = createRoute({
   getParentRoute: () => root,
   path: '/admin',
@@ -91,14 +107,26 @@ const admin = createRoute({
 export const router = createRouter({
   routeTree: root.addChildren([
     signIn,
-    faq,
-    contact,
     admin,
-    owner.addChildren([overview, tasks, task, activity, purchase, connect]),
+    owner.addChildren([
+      overview,
+      tasks,
+      task,
+      activity,
+      purchase,
+      connect,
+      wallets,
+      plans,
+      faq,
+      contact,
+    ]),
   ]),
   scrollRestoration: true,
 });
 declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    public?: boolean;
+  }
   interface Register {
     router: typeof router;
   }
