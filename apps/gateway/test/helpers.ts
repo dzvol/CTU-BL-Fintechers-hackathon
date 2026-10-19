@@ -16,6 +16,7 @@ export const testConfig: Config = {
   secureCookies: false,
   userAllocation: 2_000_000n,
   x402AllowHttpLocalhost: false,
+  jev: undefined,
 };
 
 /** Fake Google: the callback `code` becomes the Google account id, so tests can log in as anyone. */

@@ -1,39 +1,162 @@
 import { describe, expect, it } from 'vitest';
-import { decide, type ScreenSignal } from './decide';
+import { c, HONEST_JUDGE, HONEST_SCREEN } from '../../../test/fake-jev';
+import type { JudgeAnswers } from '../jev/judge-questions';
+import type { ScreenAnswers } from '../jev/screen-questions';
+import { decide, requiredSupport } from './decide';
 
 const ok = { ok: true } as const;
-const screen = (...signals: ScreenSignal[]) => ({ signals });
-const fits = { fitsIntent: true };
+const CENT = 10_000n; // 0.01 USDC
+
+function run(
+  screen: Partial<ScreenAnswers> = {},
+  judge: Partial<JudgeAnswers> = {},
+  amount = CENT,
+) {
+  return decide({
+    policy: ok,
+    amount,
+    screen: { ...HONEST_SCREEN, ...screen },
+    judge: { ...HONEST_JUDGE, ...judge },
+  });
+}
 
 describe('decision table', () => {
   it('blocks on policy without needing Jev', () => {
-    expect(decide({ policy: { ok: false, reason: 'policy_limit_exceeded' } })).toEqual({
+    expect(
+      decide({
+        policy: { ok: false, reason: 'policy_limit_exceeded', detail: 'over max per purchase' },
+        amount: CENT,
+      }),
+    ).toEqual({
       verdict: 'BLOCK',
       reason: 'policy_limit_exceeded',
+      detail: 'Policy: over max per purchase',
     });
   });
 
   it('fails closed when a semantic check is missing', () => {
-    expect(decide({ policy: ok, screen: screen() })).toMatchObject({
-      verdict: 'BLOCK',
-      reason: 'jev_unavailable',
-    });
-    expect(decide({ policy: ok, judge: fits })).toMatchObject({
-      verdict: 'BLOCK',
-      reason: 'jev_unavailable',
-    });
+    for (const partial of [{ screen: HONEST_SCREEN }, { judge: HONEST_JUDGE }, {}]) {
+      expect(decide({ policy: ok, amount: CENT, ...partial })).toMatchObject({
+        verdict: 'BLOCK',
+        reason: 'jev_unavailable',
+      });
+    }
   });
 
-  it.each([
-    [screen('prompt_injection'), fits, 'BLOCK', 'prompt_injection'],
-    [screen('prompt_injection', 'subscription'), fits, 'BLOCK', 'prompt_injection'],
-    [screen(), { fitsIntent: false }, 'BLOCK', 'off_intent'],
-    [screen('recipient_change'), { fitsIntent: false }, 'BLOCK', 'off_intent'],
-    [screen('recipient_change'), fits, 'REVIEW', 'recipient_change'],
-    [screen('subscription'), fits, 'REVIEW', 'subscription'],
-    [screen('suspicious_offer'), fits, 'REVIEW', 'suspicious_offer'],
-    [screen(), fits, 'ALLOW', 'within_intent'],
-  ] as const)('%j + %j → %s (%s)', (s, judge, verdict, reason) => {
-    expect(decide({ policy: ok, screen: s, judge })).toEqual({ verdict, reason });
+  it('allows an honest purchase', () => {
+    expect(run()).toMatchObject({ verdict: 'ALLOW', reason: 'within_intent' });
+  });
+
+  it.each<[string, Partial<ScreenAnswers>, Partial<JudgeAnswers>, string, string]>([
+    // Scenario: prompt injection in the x402 body → BLOCK by Screen.
+    ['instruction override', { instruction_override: 0.97 }, {}, 'BLOCK', 'prompt_injection'],
+    ['targets approval', { targets_approval: 0.8 }, {}, 'BLOCK', 'prompt_injection'],
+    ['claims approval', { authority_claim: 0.95 }, {}, 'BLOCK', 'prompt_injection'],
+    // A borderline signal is never let through, but the user decides.
+    ['possible manipulation', { authority_claim: 0.6 }, {}, 'REVIEW', 'suspicious_offer'],
+    [
+      'pay-elsewhere text that reads a bit like an instruction (real Jev answer)',
+      { instruction_override: 0.52, payee_change: 0.99, other_destination: 0.94 },
+      {},
+      'REVIEW',
+      'recipient_change',
+    ],
+    [
+      'injection wins over a recipient change',
+      { instruction_override: 0.9, payee_change: 0.9 },
+      {},
+      'BLOCK',
+      'prompt_injection',
+    ],
+    // Scenario: purchase outside the approved intent → BLOCK by Judge.
+    ['forbidden', {}, { mandate_rules: c('forbidden', 0.55) }, 'BLOCK', 'off_intent'],
+    ['outside purpose', {}, { mandate_purpose: c('outside_purpose', 0.9) }, 'BLOCK', 'off_intent'],
+    ['unrelated', {}, { task_relation: c('unrelated', 0.9) }, 'BLOCK', 'off_intent'],
+    [
+      'off-intent wins over subscription',
+      { billing_basis: c('recurring_subscription', 0.9) },
+      { mandate_rules: c('forbidden', 0.9) },
+      'BLOCK',
+      'off_intent',
+    ],
+    // Scenario: recipient change in the text → REVIEW.
+    ['payee change', { payee_change: 0.9 }, {}, 'REVIEW', 'recipient_change'],
+    ['other destination', { other_destination: 0.7 }, {}, 'REVIEW', 'recipient_change'],
+    // Scenario: subscription instead of a one-off payment → REVIEW.
+    [
+      'recurring billing',
+      { billing_basis: c('recurring_subscription', 0.9) },
+      {},
+      'REVIEW',
+      'subscription',
+    ],
+    ['long commitment', { billing_basis: c('long_commitment', 0.9) }, {}, 'REVIEW', 'subscription'],
+    [
+      'subscription access',
+      { offer_type: c('subscription_access', 0.9) },
+      {},
+      'REVIEW',
+      'subscription',
+    ],
+    // Otherwise suspicious → REVIEW.
+    ['urgency', { urgency: 0.8 }, {}, 'REVIEW', 'suspicious_offer'],
+    [
+      'contradictory texts',
+      { purpose_consistency: c('contradictory', 0.9) },
+      {},
+      'REVIEW',
+      'suspicious_offer',
+    ],
+    ['no stated deliverable', { deliverable_stated: 0.2 }, {}, 'REVIEW', 'suspicious_offer'],
+    ['high severity', {}, { severity: 2.4 }, 'REVIEW', 'suspicious_offer'],
+    ['far beyond need', {}, { scope: c('far_beyond_need', 0.9) }, 'REVIEW', 'beyond_need'],
+    [
+      'same need again',
+      {},
+      { history_relation: c('same_need_again', 0.9) },
+      'REVIEW',
+      'beyond_need',
+    ],
+    ['cannot tell', {}, { mandate_purpose: c('cannot_tell', 0.9) }, 'REVIEW', 'unclear_fit'],
+    [
+      'different deliverable',
+      {},
+      { task_relation: c('different_deliverable', 0.9) },
+      'REVIEW',
+      'unclear_fit',
+    ],
+    ['unsure Judge', {}, { task_relation: c('needed', 0.4) }, 'REVIEW', 'unclear_fit'],
+    // Not reasons to stop: personal data and missing scope information are Judge's business.
+    ['no scope information', {}, { scope: c('no_information', 0.9) }, 'ALLOW', 'within_intent'],
+    ['unclear history', {}, { history_relation: c('cannot_tell', 0.5) }, 'ALLOW', 'within_intent'],
+  ])('%s → %s (%s)', (_name, screen, judge, verdict, reason) => {
+    expect(run(screen, judge)).toMatchObject({ verdict, reason });
+  });
+
+  it('adds up the approving options', () => {
+    // Real Jev answer for the honest scenario: the top option alone is unsure, together clear.
+    const task_relation = {
+      choice: 'supports',
+      confidence: 0.37,
+      probabilities: { needed: 0.41, supports: 0.5, cannot_tell: 0.05 },
+    } as const;
+    expect(run({}, { task_relation })).toMatchObject({ verdict: 'ALLOW' });
+    expect(
+      run({}, { task_relation: { ...task_relation, probabilities: { supports: 0.5 } } }),
+    ).toMatchObject({ verdict: 'REVIEW', detail: 'Judge is not sure: task_relation 0.50' });
+  });
+
+  it('asks for more confidence the more money is at stake', () => {
+    const judge = { mandate_purpose: c('within_purpose', 0.7) } as const;
+    expect(run({}, judge, CENT).verdict).toBe('ALLOW');
+    expect(run({}, judge, 500_000n)).toMatchObject({ verdict: 'REVIEW', reason: 'unclear_fit' });
+    expect(requiredSupport(100_000n)).toBeLessThan(requiredSupport(100_001n));
+    expect(requiredSupport(1_000_000n)).toBeLessThan(requiredSupport(1_000_001n));
+  });
+
+  it('explains the decision without merchant text', () => {
+    expect(run({ instruction_override: 0.97, targets_approval: 0.9 }).detail).toBe(
+      'Screen flagged instruction_override 0.97, targets_approval 0.90',
+    );
   });
 });

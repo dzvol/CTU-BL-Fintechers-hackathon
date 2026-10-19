@@ -13,6 +13,7 @@ import {
 } from '@semanticauth/contracts';
 import type { JevClient } from '../../adapters/jev/jev-client';
 import type {
+  AllocationRepository,
   OperationPatch,
   OperationRecord,
   OperationRepository,
@@ -25,6 +26,8 @@ import type {
   X402Request,
   X402Transport,
 } from '../../adapters/x402';
+import type { Purchase } from '../../domain/facts/facts';
+import { toScreenState } from '../../domain/jev/state';
 import { mapPaymentRequired } from '../../domain/normalizer';
 import { canTransition, failureState } from '../../domain/operation/state-machine';
 import type { Policy } from '../../domain/policy/policy';
@@ -87,6 +90,26 @@ async function executePayment(
 async function screenDelivery(_result: { response: X402HttpResponse; normalizerInput: unknown }) {}
 // ---------------------------------------------------------------------------------------------
 
+/** Operation states in which the offer's amount is reserved or counts as spent. */
+const COMMITTED: ReadonlySet<OperationState> = new Set([
+  'reserved',
+  'prepared',
+  'issued',
+  'submitted',
+  'settled',
+  'delivered',
+  'delivery_failed',
+  'unknown',
+]);
+
+// TODO(ledger): take these from the ledger once it exists; operations are the record until then.
+const purchasesOf = (operations: OperationRecord[]): Purchase[] =>
+  operations.flatMap((op) =>
+    op.offer && COMMITTED.has(op.state)
+      ? [{ taskId: op.taskId, payTo: op.offer.payTo, amount: BigInt(op.offer.amount) }]
+      : [],
+  );
+
 interface Delivery {
   content: string;
   contentType?: string;
@@ -140,6 +163,7 @@ function toResult(op: OperationRecord, delivery?: Delivery, note?: string): Paid
 
 export function createPaymentGateway(deps: {
   operations: OperationRepository;
+  allocations: AllocationRepository;
   tasks: TaskService;
   intents: IntentService;
   transaction: Transaction;
@@ -226,7 +250,7 @@ export function createPaymentGateway(deps: {
 
     // Screen input: every merchant-controlled field of the 402, including its body.
     const screenInput = mapPaymentRequired(result.normalizerInput);
-    if (!screenInput.success) {
+    if (!screenInput.success || screenInput.queries.length === 0) {
       block(run, 'unsupported_offer', 'the payment requirements could not be read');
       return undefined;
     }
@@ -240,19 +264,28 @@ export function createPaymentGateway(deps: {
 
     const decision = await evaluateOffer(
       { policy: deps.policy, jev: deps.jev },
-      { offer, merchantText: screenInput.queries, intent, task },
+      {
+        offer,
+        screenState: toScreenState(screenInput.queries[0]!),
+        intent,
+        task,
+        purchases: purchasesOf(deps.operations.listByUser(agent.userId, {})),
+        allocation: deps.allocations.findAmount(agent.userId) ?? 0n,
+        requestedUrl: run.url,
+      },
     );
 
     if (decision.verdict === 'BLOCK') {
-      block(run, decision.reason, 'the purchase did not pass the checks', { offer });
+      block(run, decision.reason, decision.detail, { offer });
       return undefined;
     }
     if (decision.verdict === 'REVIEW') {
       // TODO(review): open a review for the user via ReviewService (expires after REVIEW_TTL_MS).
       run.move('awaiting_review', {
-        ...decision,
+        verdict: decision.verdict,
+        reason: decision.reason,
         offer,
-        message: `Waiting for the user's review (${decision.reason}). Poll check_review; nothing was paid yet.`,
+        message: `Waiting for the user's review (${decision.reason}): ${decision.detail}. Poll check_review; nothing was paid yet.`,
       });
       return undefined;
     }

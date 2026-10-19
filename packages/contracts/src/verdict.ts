@@ -20,6 +20,10 @@ export const VerdictReasonSchema = z.enum([
   'recipient_change',
   'subscription',
   'suspicious_offer',
+  /** Judge is not sure the purchase fits the intent and task (low confidence or "cannot tell"). */
+  'unclear_fit',
+  /** More than the task needs: scope far beyond it, or a need an earlier purchase already covered. */
+  'beyond_need',
   // ALLOW
   'within_intent',
   'free_content',

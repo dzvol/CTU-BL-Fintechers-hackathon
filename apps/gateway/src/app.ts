@@ -4,6 +4,11 @@ import {
   createGoogleOAuthClient,
   type GoogleOAuthClient,
 } from './adapters/google-oauth/google-oauth-client';
+import {
+  createHttpJevClient,
+  createUnconfiguredJev,
+  type JevClient,
+} from './adapters/jev/jev-client';
 import { createStore, openDatabase } from './adapters/store';
 import { createHttpX402Transport, type X402Transport } from './adapters/x402';
 import { createAuthRoutes } from './api/dashboard/auth-routes';
@@ -20,6 +25,7 @@ import { createServices } from './services';
 export interface AppOverrides {
   googleOAuth?: GoogleOAuthClient;
   x402Transport?: X402Transport;
+  jev?: JevClient;
   now?: () => Date;
 }
 
@@ -36,6 +42,7 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
     transport:
       overrides.x402Transport ??
       createHttpX402Transport({ allowHttpLocalhost: config.x402AllowHttpLocalhost }),
+    jev: overrides.jev ?? (config.jev ? createHttpJevClient(config.jev) : createUnconfiguredJev()),
     userAllocation: config.userAllocation,
     webBaseUrl: config.webBaseUrl,
     now: overrides.now,

@@ -1,7 +1,7 @@
-import { createPassThroughJev, type JevClient } from '../adapters/jev/jev-client';
+import type { JevClient } from '../adapters/jev/jev-client';
 import type { Store } from '../adapters/store';
 import type { X402Transport } from '../adapters/x402';
-import { passThroughPolicy, type Policy } from '../domain/policy/policy';
+import { defaultPolicy, type Policy } from '../domain/policy/policy';
 import { createAccountService } from './account/account-service';
 import { createApiKeyService } from './account/api-key-service';
 import { createIntentService } from './intent/intent-service';
@@ -15,9 +15,9 @@ export function createServices(deps: {
   transport: X402Transport;
   userAllocation: bigint;
   webBaseUrl: string;
-  /** Default to pass-through stubs until the real Policy and Jev exist. */
+  jev: JevClient;
+  /** Tests may swap the rules; defaults to the real Policy. */
   policy?: Policy;
-  jev?: JevClient;
   now?: () => Date;
 }) {
   const { store, now } = deps;
@@ -56,12 +56,13 @@ export function createServices(deps: {
     intents,
     payments: createPaymentGateway({
       operations: store.operations,
+      allocations: store.allocations,
       tasks,
       intents,
       transaction: store.transaction,
       transport: deps.transport,
-      policy: deps.policy ?? passThroughPolicy,
-      jev: deps.jev ?? createPassThroughJev(),
+      policy: deps.policy ?? defaultPolicy,
+      jev: deps.jev,
       now,
     }),
     reviews: createReviewService(),

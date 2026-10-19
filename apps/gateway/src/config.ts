@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { parseUsdc, UsdcDecimalSchema } from '@semanticauth/contracts';
 import { z } from 'zod';
+import type { JevConfig } from './adapters/jev/jev-client';
 
 const optional = z
   .string()
@@ -23,7 +24,14 @@ const EnvSchema = z.object({
   ),
   USER_ALLOCATION_USDC: UsdcDecimalSchema.default('2'),
   X402_ALLOW_HTTP_LOCALHOST: z.stringbool().default(false),
+  JEV_API_URL: optional.pipe(z.url().optional()),
+  JEV_API_KEY: optional,
+  JEV_MODEL: optional,
+  JEV_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
 });
+
+const DEFAULT_JEV_API_URL = 'https://api.typesafe.ai';
+const DEFAULT_JEV_MODEL = 'jev-1.13.0';
 
 export interface GoogleConfig {
   clientId: string;
@@ -42,6 +50,8 @@ export interface Config {
   userAllocation: bigint;
   /** Dev only: lets the gateway call merchants on http://localhost (tests/merchants). */
   x402AllowHttpLocalhost: boolean;
+  /** Undefined without JEV_API_KEY; every paid offer is then blocked (fail closed). */
+  jev: JevConfig | undefined;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -65,6 +75,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error('SESSION_SECRET is required in production');
   }
   if (!google) console.warn('GOOGLE_* env not set: Google login is disabled');
+  if (!e.JEV_API_KEY) console.warn('JEV_API_KEY not set: every paid offer is blocked by Jev');
   if (!e.SESSION_SECRET) console.warn('SESSION_SECRET not set: using a random one per process');
 
   return {
@@ -77,5 +88,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     secureCookies: google ? new URL(google.redirectUri).protocol === 'https:' : isProduction,
     userAllocation: parseUsdc(e.USER_ALLOCATION_USDC),
     x402AllowHttpLocalhost: e.X402_ALLOW_HTTP_LOCALHOST,
+    jev: e.JEV_API_KEY
+      ? {
+          url: e.JEV_API_URL ?? DEFAULT_JEV_API_URL,
+          apiKey: e.JEV_API_KEY,
+          model: e.JEV_MODEL ?? DEFAULT_JEV_MODEL,
+          timeoutMs: e.JEV_TIMEOUT_MS,
+        }
+      : undefined,
   };
 }
