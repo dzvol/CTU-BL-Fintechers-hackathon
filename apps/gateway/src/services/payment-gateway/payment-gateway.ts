@@ -83,9 +83,7 @@ async function executePayment(
 
 /**
  * TODO(jev): Screen the delivered content (prompt injection in the data) before the agent gets
- * it. The Screen input comes from mapDataReceival(result.normalizerInput, contentType). Note: the
- * transport currently wraps the body as { data } while the normalizer already treats the whole
- * input as data, so it ends up double-wrapped; member 3 is aligning the two.
+ * it. The Screen input comes from mapDataReceival(result.normalizerInput, contentType).
  */
 async function screenDelivery(_result: { response: X402HttpResponse; normalizerInput: unknown }) {}
 // ---------------------------------------------------------------------------------------------

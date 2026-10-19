@@ -42,12 +42,12 @@ export type X402TransportResult =
     })
   | (ReceivedResponse & {
       kind: 'content' | 'http_error';
-      normalizerInput: { data: X402Json };
+      normalizerInput: X402Json;
     })
   | (ReceivedResponse & {
       kind: 'invalid_response';
       reason: 'invalid_payment_required' | 'invalid_payment_response';
-      normalizerInput: { data: X402Json };
+      normalizerInput: X402Json;
     })
   | {
       kind: 'transport_error';
@@ -185,7 +185,8 @@ function paymentMetadata(response: X402HttpResponse): X402PaymentMetadata {
 function classify(response: X402HttpResponse, paymentAttempted: boolean): X402TransportResult {
   const paymentResponse = paymentMetadata(response);
   const received = { response, paymentResponse, paymentAttempted };
-  const normalizerInput = { data: response.body };
+  // x402 defines no envelope for paid content, so the normalizer takes the whole body as data.
+  const normalizerInput = response.body;
   if (response.status === 402) {
     const header = response.headers[PAYMENT_REQUIRED_HEADER.toLowerCase()];
     // Body-only v2 messages support the documented templates; an invalid header never falls back.
