@@ -3,6 +3,7 @@ import {
   type CheckReviewResult,
   type NormalizedOffer,
   type OperationId,
+  type PasskeyId,
   type Review,
   type ReviewId,
   type ReviewStatus,
@@ -27,7 +28,8 @@ export const APPROVAL_TTL_MS = 5 * 60 * 1000;
 export interface ReviewService {
   checkForAgent(agent: AgentContext, operationId: OperationId): CheckReviewResult;
   listForUser(userId: UserId, filter: { status?: ReviewStatus }): Review[];
-  approve(userId: UserId, reviewId: ReviewId): Review;
+  /** `passkeyId` is the passkey that confirmed it; ApprovalService checks it before calling. */
+  approve(userId: UserId, reviewId: ReviewId, passkeyId?: PasskeyId | null): Review;
   reject(userId: UserId, reviewId: ReviewId): Review;
 
   // Internal, used by PaymentGateway.
@@ -132,11 +134,12 @@ export function createReviewService(deps: {
       return deps.reviews.listByUser(userId, status).map(toReview);
     },
 
-    approve(userId, reviewId) {
+    approve(userId, reviewId, passkeyId = null) {
       const review = owned(userId, reviewId);
       // The operation stays awaiting_review until the agent resumes it with paid_fetch.
+      const decidedAt = now().toISOString();
       if (
-        !deps.reviews.decide(review.id, 'approved', now().toISOString(), later(APPROVAL_TTL_MS))
+        !deps.reviews.decide(review.id, 'approved', decidedAt, later(APPROVAL_TTL_MS), passkeyId)
       ) {
         throw new ConflictError('review_not_pending', 'Review was decided concurrently');
       }

@@ -6,7 +6,8 @@ export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface SessionService {
   create(userId: UserId): { token: string; expiresAt: Date };
-  resolve(token: string): UserId | undefined;
+  /** The session's user and when they logged in, if the session is still valid. */
+  resolve(token: string): { userId: UserId; createdAt: string } | undefined;
   revoke(token: string): void;
 }
 
@@ -34,7 +35,7 @@ export function createSessionService(deps: {
       });
       return { token, expiresAt };
     },
-    resolve: (token) => deps.sessions.findActiveUserId(hashToken(token), now().toISOString()),
+    resolve: (token) => deps.sessions.findActive(hashToken(token), now().toISOString()),
     revoke: (token) => deps.sessions.delete(hashToken(token)),
   };
 }

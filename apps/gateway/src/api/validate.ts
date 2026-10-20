@@ -18,3 +18,16 @@ export async function parseJsonBody<T extends z.ZodType>(c: Context, schema: T) 
   }
   return parse(schema, body);
 }
+
+/** Like parseJsonBody, but an empty body counts as `{}` (for bodies whose fields are optional). */
+export async function parseOptionalJsonBody<T extends z.ZodType>(c: Context, schema: T) {
+  const text = await c.req.text();
+  if (!text.trim()) return parse(schema, {});
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw new BadRequestError('Request body must be JSON');
+  }
+  return parse(schema, body);
+}

@@ -24,6 +24,7 @@ const TASK = {
   spent: '100000',
   reserved: '0',
   createdAt: '2026-10-19T10:00:00.000Z',
+  expiresAt: '2026-10-19T11:00:00.000Z',
 };
 
 type Reply = Record<string, unknown> | { error: { code: string; message: string } };

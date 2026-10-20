@@ -12,6 +12,10 @@ import {
 } from './adapters/jev/jev-client';
 import { createEoaSigner, type Signer } from './adapters/signer';
 import { createStore, openDatabase } from './adapters/store';
+import {
+  createSimpleWebAuthnVerifier,
+  type WebAuthnVerifier,
+} from './adapters/webauthn/webauthn-verifier';
 import { createHttpX402Transport, type X402Transport } from './adapters/x402';
 import { createAuthRoutes } from './api/dashboard/auth-routes';
 import { createDashboardRoutes } from './api/dashboard/dashboard-routes';
@@ -30,6 +34,7 @@ export interface AppOverrides {
   jev?: JevClient;
   signer?: Signer;
   chainReader?: ChainReader;
+  webauthn?: WebAuthnVerifier;
   now?: () => Date;
 }
 
@@ -60,6 +65,8 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
     poolLimit: config.payments.poolLimit,
     userAllocation: config.userAllocation,
     webBaseUrl: config.webBaseUrl,
+    webauthn: overrides.webauthn ?? createSimpleWebAuthnVerifier(config.passkeys),
+    passkeyRequired: config.passkeys.required,
     now: overrides.now,
   });
   const { accounts, apiKeys } = services;

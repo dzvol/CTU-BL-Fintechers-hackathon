@@ -10,6 +10,7 @@ import {
   type IntentProposal,
   type IntentStatus,
   type IntentTemplate,
+  type PasskeyId,
   type SubmitIntentResult,
   type UserId,
 } from '@semanticauth/contracts';
@@ -38,8 +39,11 @@ export interface IntentService {
   getStatus(agent: AgentContext, intentId: IntentId): GetIntentStatusResult;
   listForUser(userId: UserId, filter: { status?: IntentStatus }): Intent[];
   getForUser(userId: UserId, intentId: IntentId): Intent;
-  /** Approves and creates the active task for the key that submitted the intent. */
-  approve(userId: UserId, intentId: IntentId): Intent;
+  /**
+   * Approves and creates the active task for the key that submitted the intent. `passkeyId` is
+   * the passkey that confirmed it; ApprovalService checks the passkey before calling this.
+   */
+  approve(userId: UserId, intentId: IntentId, passkeyId?: PasskeyId | null): Intent;
   reject(userId: UserId, intentId: IntentId): Intent;
 
   // Internal, used by other services.
@@ -188,13 +192,13 @@ export function createIntentService(deps: {
       return toIntent(owned(userId, intentId));
     },
 
-    approve(userId, intentId) {
+    approve(userId, intentId, passkeyId = null) {
       return deps.transaction(() => {
         expireStale();
         const intent = owned(userId, intentId);
         pending(intent);
         const task = deps.tasks.createFromIntent(intent);
-        deps.intents.decide(intent.id, 'approved', task.createdAt, task.id);
+        deps.intents.decide(intent.id, 'approved', task.createdAt, task.id, passkeyId);
         return toIntent(deps.intents.findById(intent.id)!);
       });
     },

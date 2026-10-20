@@ -1,4 +1,9 @@
-import { type Intent, IntentSchema, listResponseSchema } from '@semanticauth/contracts';
+import {
+  type Intent,
+  IntentSchema,
+  listResponseSchema,
+  type PasskeyProof,
+} from '@semanticauth/contracts';
 import { request } from './http';
 
 /** The intent waiting for approval, if any (there is at most one). */
@@ -10,8 +15,12 @@ export async function fetchPendingIntent(): Promise<Intent | undefined> {
   return items[0];
 }
 
-export function approveIntent(id: string): Promise<Intent> {
-  return request(`/api/intents/${id}/approve`, IntentSchema, { method: 'POST' });
+/** `proof` is required once the user has a passkey (or the gateway requires passkeys). */
+export function approveIntent(id: string, proof?: PasskeyProof): Promise<Intent> {
+  return request(`/api/intents/${id}/approve`, IntentSchema, {
+    method: 'POST',
+    body: proof ? { proof } : undefined,
+  });
 }
 
 export function rejectIntent(id: string): Promise<Intent> {

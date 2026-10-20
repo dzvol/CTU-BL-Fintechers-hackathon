@@ -1,6 +1,7 @@
 import type {
   NormalizedOffer,
   OperationId,
+  PasskeyId,
   ReviewId,
   ReviewStatus,
   TaskId,
@@ -28,8 +29,17 @@ export interface ReviewRepository {
   findById(id: ReviewId): ReviewRecord | undefined;
   findByOperation(operationId: OperationId): ReviewRecord | undefined;
   listByUser(userId: UserId, status?: ReviewStatus): ReviewRecord[];
-  /** pending → approved/rejected with a new deadline; false if it was no longer pending. */
-  decide(id: ReviewId, to: 'approved' | 'rejected', decidedAt: string, expiresAt: string): boolean;
+  /**
+   * pending → approved/rejected with a new deadline; false if it was no longer pending.
+   * `passkeyId` is the passkey that confirmed an approval, if any.
+   */
+  decide(
+    id: ReviewId,
+    to: 'approved' | 'rejected',
+    decidedAt: string,
+    expiresAt: string,
+    passkeyId?: PasskeyId | null,
+  ): boolean;
   /** pending/approved → expired; false if it was in neither state anymore. */
   expire(id: ReviewId): boolean;
   /**
@@ -85,7 +95,8 @@ export function createReviewRepository(db: Db): ReviewRepository {
     'SELECT * FROM reviews WHERE user_id = ? AND status = ? ORDER BY created_at DESC',
   );
   const decide = db.prepare(
-    `UPDATE reviews SET status = @to, decided_at = @decidedAt, expires_at = @expiresAt
+    `UPDATE reviews SET status = @to, decided_at = @decidedAt, expires_at = @expiresAt,
+       approved_passkey_id = @passkeyId
      WHERE id = @id AND status = 'pending'`,
   );
   const expire = db.prepare(
@@ -108,8 +119,8 @@ export function createReviewRepository(db: Db): ReviewRepository {
     findByOperation: (operationId) => one(byOperation.get(operationId)),
     listByUser: (userId, status) =>
       (status ? byUserAndStatus.all(userId, status) : byUser.all(userId)).map(toRecord),
-    decide: (id, to, decidedAt, expiresAt) =>
-      decide.run({ id, to, decidedAt, expiresAt }).changes === 1,
+    decide: (id, to, decidedAt, expiresAt, passkeyId = null) =>
+      decide.run({ id, to, decidedAt, expiresAt, passkeyId }).changes === 1,
     expire: (id) => expire.run(id).changes === 1,
     listStale: (now) => stale.all({ now }).map(toRecord),
   };

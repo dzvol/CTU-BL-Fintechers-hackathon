@@ -10,6 +10,7 @@ import {
   type JevVariant,
 } from './domain/jev/variants';
 import { loadSignerConfig, type SignerConfig } from './adapters/signer';
+import type { WebAuthnConfig } from './adapters/webauthn/webauthn-verifier';
 
 const optional = z
   .string()
@@ -40,6 +41,9 @@ const EnvSchema = z.object({
   JEV_MODEL: optional,
   JEV_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   JEV_VARIANT: z.enum(JEV_VARIANT_IDS).default(DEFAULT_VARIANT),
+  WEBAUTHN_RP_ID: optional,
+  WEBAUTHN_RP_NAME: z.string().min(1).default('SemanticAuth'),
+  PASSKEY_REQUIRED: z.stringbool().default(false),
 });
 
 const DEFAULT_JEV_API_URL = 'https://api.typesafe.ai';
@@ -67,6 +71,12 @@ export interface Config {
   /** Which questions Jev is asked and how its answers are read (eval: npm run eval). */
   jevVariant: JevVariant;
   payments: PaymentsConfig;
+  passkeys: PasskeysConfig;
+}
+
+export interface PasskeysConfig extends WebAuthnConfig {
+  /** Every dashboard approval needs a passkey, even for users who haven't set one up. */
+  required: boolean;
 }
 
 export interface PaymentsConfig {
@@ -127,6 +137,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       signer: e.SPONSOR_PRIVATE_KEY ? loadSignerConfig(env) : undefined,
       chainReader: loadChainReaderConfig(env),
       poolLimit: parseUsdc(e.SPONSOR_POOL_USDC),
+    },
+    passkeys: {
+      // Passkeys are bound to the dashboard's domain, which is where the browser runs WebAuthn.
+      rpId: e.WEBAUTHN_RP_ID ?? new URL(e.WEB_BASE_URL).hostname,
+      rpName: e.WEBAUTHN_RP_NAME,
+      origin: new URL(e.WEB_BASE_URL).origin,
+      required: e.PASSKEY_REQUIRED,
     },
   };
 }

@@ -66,7 +66,8 @@ npm test -w @semanticauth/gateway -- policy   # single workspace / filter
   JSON (`"100000"` = 0.1 USDC). Never `number`, never floats. Convert to human form only for
   display.
 - Timestamps: ISO 8601 UTC strings in APIs and the DB.
-- IDs: prefixed UUIDs: `usr_`, `key_`, `int_`, `task_`, `op_`, `rev_` + `crypto.randomUUID()`.
+- IDs: prefixed UUIDs: `usr_`, `key_`, `int_`, `task_`, `op_`, `rev_`, `pk_` (passkey), `chl_`
+  (WebAuthn challenge) + `crypto.randomUUID()`.
 - State names are lowercase snake_case (`pending_approval`, `awaiting_review`). Verdicts are
   uppercase: `'ALLOW' | 'REVIEW' | 'BLOCK'`.
 - Files are kebab-case (`payment-gateway.ts`). Named exports only (config files excepted).

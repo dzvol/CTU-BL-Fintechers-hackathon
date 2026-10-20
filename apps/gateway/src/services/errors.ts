@@ -4,7 +4,7 @@
  */
 export class ServiceError extends Error {
   constructor(
-    readonly status: 400 | 403 | 404 | 409 | 501,
+    readonly status: 400 | 401 | 403 | 404 | 409 | 501,
     readonly code: string,
     message: string,
   ) {
@@ -16,6 +16,13 @@ export class ServiceError extends Error {
 export class BadRequestError extends ServiceError {
   constructor(message: string) {
     super(400, 'invalid_request', message);
+  }
+}
+
+/** A missing or invalid credential, e.g. a passkey proof. */
+export class UnauthorizedError extends ServiceError {
+  constructor(code: string, message: string) {
+    super(401, code, message);
   }
 }
 

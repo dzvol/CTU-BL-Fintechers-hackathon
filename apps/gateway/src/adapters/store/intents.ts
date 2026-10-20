@@ -1,4 +1,11 @@
-import type { ApiKeyId, IntentId, IntentStatus, TaskId, UserId } from '@semanticauth/contracts';
+import type {
+  ApiKeyId,
+  IntentId,
+  IntentStatus,
+  PasskeyId,
+  TaskId,
+  UserId,
+} from '@semanticauth/contracts';
 import type { Db } from './db';
 
 export interface IntentRecord {
@@ -25,12 +32,16 @@ export interface IntentRepository {
   findById(id: IntentId): IntentRecord | undefined;
   listByUser(userId: UserId, status?: IntentStatus): IntentRecord[];
   findPendingByUser(userId: UserId): IntentRecord | undefined;
-  /** pending_approval → approved/rejected; false if it was no longer pending. */
+  /**
+   * pending_approval → approved/rejected; false if it was no longer pending. `passkeyId` is the
+   * passkey that confirmed an approval, if any.
+   */
   decide(
     id: IntentId,
     to: 'approved' | 'rejected',
     decidedAt: string,
     taskId: TaskId | null,
+    passkeyId?: PasskeyId | null,
   ): boolean;
   /** Marks pending intents past `expires_at` as expired. */
   expireStale(now: string): void;
@@ -90,7 +101,7 @@ export function createIntentRepository(db: Db): IntentRepository {
     'SELECT * FROM intents WHERE user_id = ? AND status = ? ORDER BY created_at DESC',
   );
   const decide = db.prepare(
-    `UPDATE intents SET status = ?, decided_at = ?, task_id = ?
+    `UPDATE intents SET status = ?, decided_at = ?, task_id = ?, approved_passkey_id = ?
      WHERE id = ? AND status = 'pending_approval'`,
   );
   const expireStale = db.prepare(
@@ -117,7 +128,8 @@ export function createIntentRepository(db: Db): IntentRepository {
     listByUser: (userId, status) =>
       (status ? byUserAndStatus.all(userId, status) : byUser.all(userId)).map(toRecord),
     findPendingByUser: (userId) => one(byUserAndStatus.get(userId, 'pending_approval')),
-    decide: (id, to, decidedAt, taskId) => decide.run(to, decidedAt, taskId, id).changes === 1,
+    decide: (id, to, decidedAt, taskId, passkeyId = null) =>
+      decide.run(to, decidedAt, taskId, passkeyId, id).changes === 1,
     expireStale: (now) => void expireStale.run(now),
     expirePendingByApiKey: (apiKeyId, at) => void expireByKey.run(at, apiKeyId),
   };

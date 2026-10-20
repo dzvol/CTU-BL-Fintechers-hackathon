@@ -20,6 +20,12 @@ export const testConfig: Config = {
   jev: undefined,
   jevVariant: JEV_VARIANTS.baseline,
   payments: { signer: undefined, chainReader: {}, poolLimit: 20_000_000n },
+  passkeys: {
+    rpId: 'localhost',
+    rpName: 'SemanticAuth',
+    origin: 'http://localhost:5173',
+    required: false,
+  },
 };
 
 /** Fake Google: the callback `code` becomes the Google account id, so tests can log in as anyone. */

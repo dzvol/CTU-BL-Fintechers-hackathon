@@ -4,15 +4,21 @@ import type { Signer } from '../adapters/signer';
 import type { Thresholds } from '../domain/decision/decide';
 import type { Store } from '../adapters/store';
 import type { X402PaymentRequired, X402Transport } from '../adapters/x402';
+import {
+  createRejectingWebAuthnVerifier,
+  type WebAuthnVerifier,
+} from '../adapters/webauthn/webauthn-verifier';
 import { defaultPolicy, type Policy } from '../domain/policy/policy';
 import { createAccountService } from './account/account-service';
 import { createApiKeyService } from './account/api-key-service';
+import { createApprovalService } from './approval/approval-service';
 import { createIntentService } from './intent/intent-service';
 import {
   createPaymentGateway,
   type SelectedOffer,
   type SettlementChecks,
 } from './payment-gateway/payment-gateway';
+import { createPasskeyService } from './passkey/passkey-service';
 import { createReviewService } from './review/review-service';
 import { createTaskService } from './task/task-service';
 
@@ -38,6 +44,10 @@ export function createServices(deps: {
     requestedUrl: string,
   ) => SelectedOffer | undefined;
   settlementChecks?: SettlementChecks;
+  /** Checks passkeys for dashboard approvals; without one every passkey check fails. */
+  webauthn?: WebAuthnVerifier;
+  /** PASSKEY_REQUIRED: approvals need a passkey even for users who haven't set one up. */
+  passkeyRequired?: boolean;
   now?: () => Date;
 }) {
   const { store, now } = deps;
@@ -83,12 +93,27 @@ export function createServices(deps: {
     now,
   });
 
+  const passkeys = createPasskeyService({
+    passkeys: store.passkeys,
+    challenges: store.challenges,
+    users: store.users,
+    intents: store.intents,
+    reviews: store.reviews,
+    operations: store.operations,
+    verifier: deps.webauthn ?? createRejectingWebAuthnVerifier(),
+    transaction: store.transaction,
+    required: deps.passkeyRequired ?? false,
+    now,
+  });
+
   return {
     accounts,
     apiKeys,
     tasks,
     intents,
     reviews,
+    passkeys,
+    approvals: createApprovalService({ passkeys, intents, reviews }),
     payments: createPaymentGateway({
       operations: store.operations,
       allocations: store.allocations,

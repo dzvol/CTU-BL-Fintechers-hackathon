@@ -9,3 +9,4 @@ export * from './mcp';
 export * from './errors';
 export * from './dashboard-api';
 export * from './api-keys';
+export * from './passkeys';

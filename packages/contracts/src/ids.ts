@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export type IdPrefix = 'usr' | 'key' | 'int' | 'task' | 'op' | 'rev';
+export type IdPrefix = 'usr' | 'key' | 'int' | 'task' | 'op' | 'rev' | 'pk' | 'chl';
 
 const prefixedId = (prefix: IdPrefix) =>
   z.string().regex(new RegExp(`^${prefix}_[0-9a-f-]{36}$`), `expected ${prefix}_<uuid>`);
@@ -11,6 +11,8 @@ export const IntentIdSchema = prefixedId('int');
 export const TaskIdSchema = prefixedId('task');
 export const OperationIdSchema = prefixedId('op');
 export const ReviewIdSchema = prefixedId('rev');
+export const PasskeyIdSchema = prefixedId('pk');
+export const ChallengeIdSchema = prefixedId('chl');
 
 export type UserId = z.infer<typeof UserIdSchema>;
 export type ApiKeyId = z.infer<typeof ApiKeyIdSchema>;
@@ -18,6 +20,8 @@ export type IntentId = z.infer<typeof IntentIdSchema>;
 export type TaskId = z.infer<typeof TaskIdSchema>;
 export type OperationId = z.infer<typeof OperationIdSchema>;
 export type ReviewId = z.infer<typeof ReviewIdSchema>;
+export type PasskeyId = z.infer<typeof PasskeyIdSchema>;
+export type ChallengeId = z.infer<typeof ChallengeIdSchema>;
 
 export function newId(prefix: IdPrefix): string {
   return `${prefix}_${crypto.randomUUID()}`;

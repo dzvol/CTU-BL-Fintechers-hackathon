@@ -23,9 +23,9 @@ const unauthorized = (c: Context, code: string, message: string) =>
 export function requireUserSession(sessions: SessionService): MiddlewareHandler<UserEnv> {
   return async (c, next) => {
     const token = getCookie(c, SESSION_COOKIE);
-    const userId = token ? sessions.resolve(token) : undefined;
-    if (!userId) return unauthorized(c, 'unauthenticated', 'Login required');
-    c.set('auth', { userId });
+    const session = token ? sessions.resolve(token) : undefined;
+    if (!session) return unauthorized(c, 'unauthenticated', 'Login required');
+    c.set('auth', { userId: session.userId, loggedInAt: session.createdAt });
     await next();
   };
 }
