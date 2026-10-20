@@ -1,10 +1,10 @@
 import { AlertCircle, Check, Copy, Loader2, WifiOff, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
-import { formatUsdc, type VerdictReason } from '@semanticauth/contracts';
+import { formatUsdc } from '@semanticauth/contracts';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { ApiError } from '@/api/http';
-import { REASON, REASON_ICON, type Label, type Tone } from '@/lib/labels';
+import type { Label, Tone } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function Money({
@@ -169,15 +169,6 @@ export function StatusIcon({ status, size = 'md' }: { status: Label; size?: 'sm'
 }
 
 /** Why the gateway decided what it did, as a small muted icon. */
-export function ReasonIcon({ reason }: { reason: VerdictReason }) {
-  const Icon = REASON_ICON[reason];
-  return (
-    <Hint label={REASON[reason]}>
-      <Icon aria-hidden className="size-3.5" />
-    </Hint>
-  );
-}
-
 /**
  * Spent, reserved and what is left of `total`, as one bar. Widths come from bigint math so atomic
  * amounts never pass through floats.

@@ -141,6 +141,33 @@ function Account({ me, onSignOut, busy }: { me: Me; onSignOut: () => void; busy:
   );
 }
 
+function HomeLink({ onClick }: { onClick?: () => void }) {
+  return (
+    <Link
+      to="/overview"
+      onClick={onClick}
+      aria-label="SemanticAuth home"
+      className="inline-flex rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+    >
+      <Logo />
+    </Link>
+  );
+}
+
+/** Static pages outside the SPA, so plain anchors rather than router links. */
+function Legal() {
+  return (
+    <p className="-mt-3 flex gap-3 px-1 text-xs text-sidebar-foreground/45">
+      <a href="/privacy-policy" className="hover:text-sidebar-foreground/80">
+        Privacy
+      </a>
+      <a href="/terms-of-service" className="hover:text-sidebar-foreground/80">
+        Terms
+      </a>
+    </p>
+  );
+}
+
 function Sidebar({
   me,
   pending,
@@ -155,7 +182,7 @@ function Sidebar({
   return (
     <div className="flex h-full flex-col gap-6 p-3">
       <div className="px-3 pt-3">
-        <Logo />
+        <HomeLink onClick={onNavigate} />
       </div>
       <div className="flex-1">
         <NavLinks pending={pending} onClick={onNavigate} />
@@ -164,6 +191,7 @@ function Sidebar({
       <div className="border-t border-sidebar-border px-1 pt-3">
         <Account me={me} onSignOut={() => signOut.mutate()} busy={signOut.isPending} />
       </div>
+      <Legal />
     </div>
   );
 }
@@ -232,7 +260,7 @@ function Dashboard({ me }: { me: Me }) {
       </aside>
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur md:hidden">
-          <Logo />
+          <HomeLink />
           <Sheet open={mobile} onOpenChange={setMobile}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="relative" aria-label="Open navigation">
