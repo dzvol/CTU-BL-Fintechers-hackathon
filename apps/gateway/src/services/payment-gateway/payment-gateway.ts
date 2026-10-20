@@ -51,7 +51,11 @@ import type { IntentService } from '../intent/intent-service';
 import type { ReviewService } from '../review/review-service';
 import type { TaskService } from '../task/task-service';
 import { evaluateOffer } from './evaluation';
-import { selectOffer as selectSupportedOffer, type SelectedOffer } from './offer-selection';
+import {
+  selectOffer as selectSupportedOffer,
+  withMerchantText,
+  type SelectedOffer,
+} from './offer-selection';
 
 export type { SelectedOffer } from './offer-selection';
 
@@ -313,7 +317,12 @@ export function createPaymentGateway(deps: {
     if (!selected) {
       return refused('unsupported_offer', 'no payment option matches exact/Base Sepolia/USDC');
     }
-    return { kind: 'offer', selected, screenState: toScreenState(screenInput.queries[0]!) };
+    const screenState = toScreenState(screenInput.queries[0]!);
+    return {
+      kind: 'offer',
+      selected: { ...selected, offer: withMerchantText(selected.offer, screenState) },
+      screenState,
+    };
   }
 
   /** The user's purchases that reserved or spent money; the ledger decides what still counts. */

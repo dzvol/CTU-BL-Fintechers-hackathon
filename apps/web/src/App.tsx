@@ -25,8 +25,7 @@ const PurchaseDetail = page(() => import('./pages/purchase-detail'), 'PurchaseDe
 const Tasks = page(() => import('./pages/tasks'), 'Tasks');
 const TaskDetail = page(() => import('./pages/task-detail'), 'TaskDetail');
 const Agent = page(() => import('./pages/agent'), 'Agent');
-const Faq = page(() => import('./pages/information'), 'Faq');
-const Contact = page(() => import('./pages/information'), 'Contact');
+const Contact = page(() => import('./pages/contact'), 'Contact');
 
 function Message({ title, action }: { title: string; action: React.ReactNode }) {
   return (
@@ -92,12 +91,6 @@ const task = createRoute({
   path: '/tasks/$id',
   component: TaskDetail,
 });
-const faq = createRoute({
-  getParentRoute: () => owner,
-  path: '/faq',
-  component: Faq,
-  staticData: { public: true },
-});
 const contact = createRoute({
   getParentRoute: () => owner,
   path: '/contact',
@@ -142,7 +135,7 @@ export const router = createRouter({
   routeTree: root.addChildren([
     signIn,
     ...moved,
-    owner.addChildren([overview, activity, purchase, tasks, task, agent, faq, contact]),
+    owner.addChildren([overview, activity, purchase, tasks, task, agent, contact]),
   ]),
   scrollRestoration: true,
 });

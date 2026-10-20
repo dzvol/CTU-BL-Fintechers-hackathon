@@ -70,4 +70,26 @@ describe('test merchants', () => {
       expect(required.accepts.every((a) => a.payTo === env.MERCHANT_PAY_TO)).toBe(true);
     }
   });
+
+  it('lists the advertised offers in a free catalog with HTTPS links behind the proxy', async () => {
+    const res = await app.request('http://merchants.internal/catalog', {
+      headers: { 'x-forwarded-proto': 'https' },
+    });
+    expect(res.status).toBe(200);
+    const { offers } = (await res.json()) as {
+      offers: Array<{ title: string; summary: string; priceUsdc: string; url: string }>;
+    };
+    expect(offers.map((o) => o.url)).toEqual(
+      SCENARIOS.filter((s) => s.listing).map((s) => `https://merchants.internal${s.path}`),
+    );
+    expect(offers.find((o) => o.title === 'Czech SME Overview 2026')?.priceUsdc).toBe('0.05');
+    // Adversarial routes are not advertised: the agent only finds them if it is pointed there.
+    expect(offers.some((o) => /injection|recipient|off-intent/.test(o.url))).toBe(false);
+  });
+
+  it('advertises the market entry pack without saying what the offer says', () => {
+    const pack = SCENARIOS.find((s) => s.path === '/datanest/market-entry-pack')!;
+    expect(pack.listing?.summary).not.toMatch(/US|consumer/);
+    expect(pack.offer?.description).toMatch(/US consumers/);
+  });
 });

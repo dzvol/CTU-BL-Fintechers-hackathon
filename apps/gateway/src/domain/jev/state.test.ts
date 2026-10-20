@@ -61,6 +61,8 @@ describe('toJudgeState', () => {
         billing_basis: 'one_time_purchase',
         counterparty_type: 'company',
         contains_personal_data: 'yes',
+        data_subject: 'markets_assets',
+        region: 'not_regional',
       },
     });
   });
@@ -87,17 +89,21 @@ describe('toJudgeState', () => {
     ).not.toHaveProperty('subject_area');
   });
 
-  it("passes v3's scale and what the buyer receives, but not the secrets score", () => {
+  it('passes scale, what the buyer receives, whom and where the data is about, not the secrets score', () => {
     const screen = {
       ...HONEST_SCREEN,
       scale: { ...c('bulk_export', 0.8), note: INJECTION },
       buyer_receives: c('information', 0.9),
+      data_subject: c('consumers', 0.9),
+      region: c('north_america', 0.9),
       requests_secrets: 0.97,
     } as typeof HONEST_SCREEN;
     const state = toJudgeState({ intent, facts: {}, screen });
     expect(state.offer_as_extracted_from_merchant_text).toMatchObject({
       scale: 'bulk_export',
       buyer_receives: 'information',
+      data_subject: 'consumers',
+      region: 'north_america',
     });
     expect(JSON.stringify(state)).not.toContain('IGNORE');
     expect(JSON.stringify(state)).not.toContain('requests_secrets');

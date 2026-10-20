@@ -5,6 +5,41 @@ import type { AnswerOf, Answers, Questions } from './questions';
  * mandate, task or amounts. `scope_company` from the team's question set is left out because it
  * names one specific task's subject, which Screen must not see.
  */
+/**
+ * Who or what the data is about. A US consumer panel and a Czech business register are both
+ * "business data"; only this tells them apart for Judge. Asked by every variant.
+ */
+export const DATA_SUBJECT = {
+  type: 'choice',
+  instructions: 'Who or what is the offered data or service about?',
+  criteria: {
+    businesses: 'Companies, organisations or business registers',
+    consumers: 'Consumers, households or survey panels of people',
+    individuals: 'Named people, profiles or contact details',
+    markets_assets: 'Prices, trading, tokens or financial markets',
+    places_environment: 'Places, routes, weather or climate',
+    content_media: 'News, articles, web pages, reviews or media',
+    none: 'It is a tool or service, not data about anyone or anything in particular',
+    unknown: 'Cannot be determined from the text',
+  },
+} as const;
+
+/** Which part of the world the offer is about, coarse enough to stay generic. Asked by every variant. */
+export const REGION = {
+  type: 'choice',
+  instructions: 'Which part of the world is the offered data or service about?',
+  criteria: {
+    europe: 'Europe or a European country',
+    north_america: 'The United States, Canada or Mexico',
+    latin_america: 'Central or South America',
+    asia_pacific: 'Asia, Australia or the Pacific',
+    africa_middle_east: 'Africa or the Middle East',
+    global: 'Worldwide, or many regions at once',
+    not_regional: 'Not tied to a place, such as a tool, an AI model or crypto prices',
+    unknown: 'The text does not say',
+  },
+} as const;
+
 export const SCREEN_QUESTIONS = {
   offer_type: {
     type: 'choice',
@@ -142,6 +177,8 @@ export const SCREEN_QUESTIONS = {
       cannot_tell: 'The texts are too unclear to compare',
     },
   },
+  data_subject: DATA_SUBJECT,
+  region: REGION,
 } as const satisfies Questions;
 
 /**
@@ -251,10 +288,40 @@ export const SCREEN_QUESTIONS_V3 = {
   requests_secrets: REQUESTS_SECRETS,
 } as const satisfies Questions;
 
-/** v1 answers; the later questions only when the variant asks them. */
-export type ScreenAnswers = Answers<typeof SCREEN_QUESTIONS> & {
+/**
+ * The country an offer is about, for the pitch demo only (variant `demo`): `region` says
+ * "Europe", so Judge could not confirm that Czech SME data fits a task about the Czech market.
+ */
+export const COUNTRY_DEMO = {
+  type: 'choice',
+  instructions: 'Which country is the offered data or service about?',
+  criteria: {
+    czechia: 'Czechia (the Czech Republic)',
+    other_european_country: 'Another European country',
+    united_states: 'The United States',
+    other_country: 'Another country outside Europe',
+    several_countries: 'Several countries, or worldwide',
+    not_country_specific: 'Not tied to a country, such as a tool, an AI model or crypto prices',
+    unknown: 'The text does not say',
+  },
+} as const;
+
+/** The pitch demo's questions: v3 plus the country. Not evaluated. */
+export const SCREEN_QUESTIONS_DEMO = {
+  ...SCREEN_QUESTIONS_V3,
+  country: COUNTRY_DEMO,
+} as const satisfies Questions;
+
+/**
+ * Screen's answers. `data_subject` and `region` are optional because answers recorded before
+ * they were added lack them; the later questions only when the variant asks them.
+ */
+export type ScreenAnswers = Answers<Omit<typeof SCREEN_QUESTIONS, 'data_subject' | 'region'>> & {
   subject_area?: AnswerOf<typeof SUBJECT_AREA>;
   scale?: AnswerOf<typeof SCALE>;
   buyer_receives?: AnswerOf<typeof BUYER_RECEIVES>;
   requests_secrets?: AnswerOf<typeof REQUESTS_SECRETS>;
+  data_subject?: AnswerOf<typeof DATA_SUBJECT>;
+  region?: AnswerOf<typeof REGION>;
+  country?: AnswerOf<typeof COUNTRY_DEMO>;
 };

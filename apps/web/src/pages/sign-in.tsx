@@ -69,9 +69,6 @@ export function SignIn() {
           )}
         </div>
         <nav aria-label="Information" className="mt-6 flex gap-4 text-sm">
-          <Link to="/faq" className="text-muted-foreground hover:text-foreground">
-            FAQ
-          </Link>
           <Link to="/contact" className="text-muted-foreground hover:text-foreground">
             Contact
           </Link>

@@ -1,7 +1,17 @@
 import { DEFAULT_THRESHOLDS, type Thresholds } from '../decision/decide';
-import { JUDGE_QUESTIONS, JUDGE_QUESTIONS_V2, JUDGE_QUESTIONS_V3 } from './judge-questions';
+import {
+  JUDGE_QUESTIONS,
+  JUDGE_QUESTIONS_DEMO,
+  JUDGE_QUESTIONS_V2,
+  JUDGE_QUESTIONS_V3,
+} from './judge-questions';
 import type { QuestionSetLike } from './questions';
-import { SCREEN_QUESTIONS, SCREEN_QUESTIONS_V2, SCREEN_QUESTIONS_V3 } from './screen-questions';
+import {
+  SCREEN_QUESTIONS,
+  SCREEN_QUESTIONS_DEMO,
+  SCREEN_QUESTIONS_V2,
+  SCREEN_QUESTIONS_V3,
+} from './screen-questions';
 
 /** The questions a variant asks; each set answers at least what the decision table reads. */
 export interface JevQuestionSets {
@@ -17,6 +27,11 @@ export const QUESTIONS_V2: JevQuestionSets = {
 export const QUESTIONS_V3: JevQuestionSets = {
   screen: SCREEN_QUESTIONS_V3,
   judge: JUDGE_QUESTIONS_V3,
+};
+/** Pitch demo only: v3 plus the country. */
+export const QUESTIONS_DEMO: JevQuestionSets = {
+  screen: SCREEN_QUESTIONS_DEMO,
+  judge: JUDGE_QUESTIONS_DEMO,
 };
 
 /**
@@ -84,17 +99,36 @@ export const JEV_VARIANTS = {
     questions: QUESTIONS_V3,
     thresholds: { ...DEFAULT_THRESHOLDS, rules: { topicMismatch: 'block' } },
   },
-  // One rule on top of questions-v3: on dev it caught the one harmful purchase v3 still paid (an
-  // NFT mint for an image task) and sent 8 more of 321 real listings to REVIEW, mostly on-ramps,
-  // bank payments and vault deposits.
+  // questions-v3 plus the asset rule. With the rule catching tokens and NFTs, a cheap purchase
+  // needs less certainty from Judge: 0.5 instead of 0.6 paid nothing harmful more on dev (snapshot
+  // allq-dev) and stopped asking about honest small purchases Judge rated 0.54-0.6 "within purpose".
   'v3-assets': {
     id: 'v3-assets',
     description:
-      'questions-v3, and the user is always asked when the buyer would own a token, NFT or financial position.',
+      'questions-v3; the user is always asked before buying a token, NFT or financial position, and small purchases need a less sure Judge.',
     questions: QUESTIONS_V3,
     thresholds: {
       ...DEFAULT_THRESHOLDS,
+      support: { ...DEFAULT_THRESHOLDS.support, upTo10Cents: 0.5 },
       rules: { topicMismatch: 'block', assetPurchase: 'review' },
+    },
+  },
+  // For the live pitch demo only (tests/merchants /datanest/*), not for evaluation: settings
+  // picked so the honest Czech SME offer passes without asking. Never quote its numbers.
+  demo: {
+    id: 'demo',
+    description:
+      "Pitch demo only, not evaluated: v3 questions plus the country, the asset rule, a less sure Judge on small amounts, no review for a short description, and an on-topic offer passes Judge's purpose check.",
+    questions: QUESTIONS_DEMO,
+    thresholds: {
+      ...DEFAULT_THRESHOLDS,
+      support: { upTo10Cents: 0.4, upTo1Usdc: 0.6, above: 0.9 },
+      rules: {
+        topicMismatch: 'block',
+        assetPurchase: 'review',
+        deliverable: 'kind',
+        purposeFromTopic: true,
+      },
     },
   },
 } as const satisfies Record<string, JevVariant>;

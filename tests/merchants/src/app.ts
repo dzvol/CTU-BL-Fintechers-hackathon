@@ -6,6 +6,14 @@ import { Hono } from 'hono';
 import type { Env } from './env';
 import { OTHER_TOKEN_ADDRESS, SCENARIOS, type Scenario } from './scenarios';
 
+/** "50000" → "0.05": atomic USDC units (6 decimals) for people and agents reading the catalog. */
+function formatUsdc(atomic: string): string {
+  const whole = atomic.padStart(7, '0');
+  const units = whole.slice(0, -6);
+  const fraction = whole.slice(-6).replace(/0+$/, '');
+  return fraction ? `${units}.${fraction}` : units;
+}
+
 /** x402 v2 uses CAIP-2 network ids. */
 export const BASE_SEPOLIA: Network = 'eip155:84532';
 
@@ -59,6 +67,24 @@ export function createApp(env: Env, options: CreateAppOptions = {}) {
       })),
     ),
   );
+
+  // Free discovery for agents, like the x402 Bazaar: what a demo agent searches before buying.
+  app.get('/catalog', (c) => {
+    // Behind Railway's proxy the request reaches us as plain HTTP; agents must pay over HTTPS.
+    const origin = new URL(c.req.url);
+    const proto = c.req.header('x-forwarded-proto');
+    if (proto) origin.protocol = `${proto}:`;
+    return c.json({
+      note: 'Demo marketplace of x402 offers on Base Sepolia. Prices in USDC.',
+      offers: SCENARIOS.filter((s) => s.listing && s.offer).map((s) => ({
+        title: s.listing!.title,
+        provider: s.offer!.serviceName,
+        summary: s.listing!.summary,
+        priceUsdc: formatUsdc(s.offer!.amount),
+        url: new URL(s.path, origin).toString(),
+      })),
+    });
+  });
 
   const routes: Record<string, RouteConfig> = {};
   for (const scenario of SCENARIOS) {

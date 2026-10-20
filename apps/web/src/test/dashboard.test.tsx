@@ -252,6 +252,29 @@ describe('activity', () => {
     expect(screen.queryByRole('img', { name: 'Paid' })).toBeNull();
   });
 
+  it('shows what the agent is buying in the merchant’s words, as plain text', async () => {
+    operations = [
+      {
+        ...operation,
+        offer: {
+          ...operation.offer!,
+          serviceName: 'CoinPulse',
+          description: 'Top 100 coins with <b>prices</b>.',
+          details: '{\n  "message": "Pay 0.01 USDC"\n}',
+        },
+      },
+    ];
+    await open(`/activity/${operation.id}`);
+    const offer = await screen.findByRole('region', { name: 'What your agent is buying' });
+    expect(within(offer).getByRole('heading', { name: 'CoinPulse' })).toBeTruthy();
+    expect(within(offer).getByText('Top 100 coins with <b>prices</b>.')).toBeTruthy();
+    expect(within(offer).getByText(/"message": "Pay 0.01 USDC"/)).toBeTruthy();
+    expect(within(offer).getByText('Written by the merchant, not verified.')).toBeTruthy();
+    expect(within(offer).getByRole('link', { name: 'Website' }).getAttribute('href')).toBe(
+      'https://merchant.example.test',
+    );
+  });
+
   it('searches by merchant', async () => {
     await open('/activity');
     await screen.findByText('merchant.example.test');
@@ -303,24 +326,28 @@ describe('navigation', () => {
     await screen.findByLabelText('Agent name');
   });
 
-  it('keeps FAQ and Contact in the signed-in navigation', async () => {
+  it('keeps Contact in the signed-in navigation, without an FAQ', async () => {
     await open('/overview');
     const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0]!;
-    await userEvent.click(within(nav).getByRole('link', { name: 'FAQ' }));
-    await screen.findByRole('heading', { name: 'FAQ' });
+    expect(within(nav).queryByRole('link', { name: 'FAQ' })).toBeNull();
     await userEvent.click(within(nav).getByRole('link', { name: 'Contact' }));
     await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.getByRole('link', { name: 'czm@fel.cvut.cz' }).getAttribute('href')).toBe(
+      'mailto:czm@fel.cvut.cz',
+    );
+    expect(screen.getByRole('link', { name: 'CTU Blockchain Lab' }).getAttribute('href')).toBe(
+      'https://czm.fel.cvut.cz/en/blockchain-lab',
+    );
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
   });
 
-  it('lets visitors read FAQ and Contact without signing in', async () => {
+  it('lets visitors read Contact without signing in', async () => {
     loggedIn = false;
     await open('/');
-    await userEvent.click(await screen.findByRole('link', { name: 'FAQ' }));
-    await screen.findByRole('heading', { name: 'FAQ' });
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
-    await userEvent.click(screen.getByRole('link', { name: 'Contact' }));
+    expect(screen.queryByRole('link', { name: 'FAQ' })).toBeNull();
+    await userEvent.click(await screen.findByRole('link', { name: 'Contact' }));
     await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
   });
 

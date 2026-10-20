@@ -48,6 +48,12 @@ export interface DecisionRules {
    * position (only variants that ask it). Judge read an NFT mint as fitting an image task.
    */
   assetPurchase: 'review' | 'ignore';
+  /**
+   * When Judge's `topic_fit` says the offer is about the task's subject, Judge's doubts about the
+   * purpose sentence (`mandate_purpose`) neither block nor review. Judge reads only option keys,
+   * so a very specific purpose ("counts of Czech SMEs by sector") often gets "cannot tell".
+   */
+  purposeFromTopic: boolean;
 }
 
 export const DEFAULT_RULES: DecisionRules = {
@@ -56,6 +62,7 @@ export const DEFAULT_RULES: DecisionRules = {
   reviewUnclearConsistency: false,
   topicMismatch: 'ignore',
   assetPurchase: 'ignore',
+  purposeFromTopic: false,
 };
 
 /** Every tunable cut-off of the decision table, so the offline evaluation can tune them. */
@@ -141,7 +148,10 @@ export function decide(
   if (judge.mandate_rules.choice === 'forbidden') {
     return block('off_intent', 'Judge: a forbidden rule of the intent applies');
   }
-  if (judge.mandate_purpose.choice === 'outside_purpose') {
+  const onTopic =
+    rules.purposeFromTopic &&
+    (judge.topic_fit?.choice === 'same_subject' || judge.topic_fit?.choice === 'adjacent_subject');
+  if (judge.mandate_purpose.choice === 'outside_purpose' && !onTopic) {
     return block('off_intent', 'Judge: outside the approved purpose');
   }
   if (judge.task_relation.choice === 'unrelated') {
@@ -208,6 +218,7 @@ export function decide(
   }
   // Approving options add up: "needed" 0.41 + "supports" 0.50 is a clear yes.
   const unclear = (Object.keys(APPROVING) as (keyof typeof APPROVING)[])
+    .filter((q) => !(onTopic && q === 'mandate_purpose'))
     .map((q) => {
       const probabilities: Partial<Record<string, number>> = judge[q].probabilities;
       const support = APPROVING[q].reduce((sum, option) => sum + (probabilities[option] ?? 0), 0);

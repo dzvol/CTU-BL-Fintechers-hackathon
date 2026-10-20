@@ -56,13 +56,21 @@ describe('Jev variants', () => {
     );
   });
 
-  it('adds only the asset rule to questions-v3 in v3-assets', () => {
+  it('adds the asset rule and a less sure Judge on small amounts to questions-v3 in v3-assets', () => {
     const v3 = JEV_VARIANTS['questions-v3'];
     const assets = JEV_VARIANTS['v3-assets'];
     expect(assets.questions).toBe(v3.questions);
     expect(assets.thresholds).toEqual({
       ...v3.thresholds,
+      support: { ...v3.thresholds.support, upTo10Cents: 0.5 },
       rules: { ...v3.thresholds.rules, assetPurchase: 'review' },
     });
+  });
+
+  it('keeps the demo-only country question out of every other variant', () => {
+    expect(JEV_VARIANTS.demo.questions.screen).toHaveProperty('country');
+    for (const [id, variant] of Object.entries(JEV_VARIANTS)) {
+      if (id !== 'demo') expect(variant.questions.screen, id).not.toHaveProperty('country');
+    }
   });
 });

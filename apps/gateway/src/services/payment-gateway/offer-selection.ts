@@ -1,6 +1,11 @@
 import { AddressSchema, AmountSchema, type NormalizedOffer } from '@semanticauth/contracts';
 import { SIGNER_PROFILE } from '../../adapters/signer';
 import type { X402PaymentRequired, X402PaymentRequirements } from '../../adapters/x402';
+import type { ScreenState } from '../../domain/jev/state';
+
+/** Caps on stored merchant text: enough to read, too little to bloat the operations table. */
+const MAX = { serviceName: 200, description: 2_000, details: 4_000 };
+const cap = (text: string, max: number) => (text.length > max ? `${text.slice(0, max)}…` : text);
 
 /** The x402 option the gateway would pay, as Policy sees it plus the raw option for the signer. */
 export interface SelectedOffer {
@@ -53,5 +58,24 @@ export function selectOffer(
       amount: requirements.amount,
       resourceUrl: new URL(requestedUrl).toString(),
     },
+  };
+}
+
+/**
+ * The offer plus the merchant text Screen read, so the dashboard can show the user what the
+ * agent is buying. Stored on the operation only: Policy, facts and Judge read the payment fields,
+ * and MCP results never carry the offer.
+ */
+export function withMerchantText(
+  offer: NormalizedOffer,
+  screenState: ScreenState,
+): NormalizedOffer {
+  const { serviceName, description } = screenState.resource;
+  const body = screenState.response_body_excerpt;
+  return {
+    ...offer,
+    ...(serviceName && { serviceName: cap(serviceName, MAX.serviceName) }),
+    ...(description && { description: cap(description, MAX.description) }),
+    ...(body !== undefined && { details: cap(JSON.stringify(body, null, 2), MAX.details) }),
   };
 }

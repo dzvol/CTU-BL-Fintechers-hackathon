@@ -15,6 +15,8 @@ const offer: NormalizedOffer = {
   amount: '100000',
   resourceUrl: 'https://merchant.example/data',
   description: INJECTION,
+  serviceName: INJECTION,
+  details: INJECTION,
 };
 const intent = {
   purpose: 'Buy market data',
