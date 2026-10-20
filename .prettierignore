@@ -3,3 +3,6 @@ dist
 coverage
 package-lock.json
 *.pdf
+
+# Google Search Console ownership file: Google compares it byte for byte.
+apps/web/public/google*.html
