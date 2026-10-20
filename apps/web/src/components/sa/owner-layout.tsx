@@ -2,17 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useMatches, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatUsdc, type Me } from '@semanticauth/contracts';
-import {
-  Activity,
-  Bot,
-  CircleHelp,
-  Home,
-  Hourglass,
-  ListChecks,
-  LogOut,
-  Mail,
-  Menu,
-} from 'lucide-react';
+import { Activity, Bot, Home, Hourglass, ListChecks, LogOut, Mail, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetDescription, SheetTrigger } from '../ui/sheet';
@@ -29,10 +19,7 @@ const NAV = [
   { to: '/tasks', label: 'Tasks', icon: ListChecks },
   { to: '/agent', label: 'Agent', icon: Bot },
 ] as const;
-const HELP = [
-  { to: '/faq', label: 'FAQ', icon: CircleHelp },
-  { to: '/contact', label: 'Contact', icon: Mail },
-] as const;
+const HELP = [{ to: '/contact', label: 'Contact', icon: Mail }] as const;
 const LINK =
   'flex h-10 items-center gap-3 rounded-lg px-3 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground';
 const ACTIVE = {
@@ -197,7 +184,7 @@ function Sidebar({
 }
 
 export function OwnerLayout() {
-  // FAQ and Contact are readable without signing in.
+  // Contact is readable without signing in.
   const publicPage = useMatches({
     select: (matches) => matches.some((match) => match.staticData.public === true),
   });

@@ -303,24 +303,28 @@ describe('navigation', () => {
     await screen.findByLabelText('Agent name');
   });
 
-  it('keeps FAQ and Contact in the signed-in navigation', async () => {
+  it('keeps Contact in the signed-in navigation, without an FAQ', async () => {
     await open('/overview');
     const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0]!;
-    await userEvent.click(within(nav).getByRole('link', { name: 'FAQ' }));
-    await screen.findByRole('heading', { name: 'FAQ' });
+    expect(within(nav).queryByRole('link', { name: 'FAQ' })).toBeNull();
     await userEvent.click(within(nav).getByRole('link', { name: 'Contact' }));
     await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.getByRole('link', { name: 'czm@fel.cvut.cz' }).getAttribute('href')).toBe(
+      'mailto:czm@fel.cvut.cz',
+    );
+    expect(screen.getByRole('link', { name: 'CTU Blockchain Lab' }).getAttribute('href')).toBe(
+      'https://czm.fel.cvut.cz/en/blockchain-lab',
+    );
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
   });
 
-  it('lets visitors read FAQ and Contact without signing in', async () => {
+  it('lets visitors read Contact without signing in', async () => {
     loggedIn = false;
     await open('/');
-    await userEvent.click(await screen.findByRole('link', { name: 'FAQ' }));
-    await screen.findByRole('heading', { name: 'FAQ' });
-    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
-    await userEvent.click(screen.getByRole('link', { name: 'Contact' }));
+    expect(screen.queryByRole('link', { name: 'FAQ' })).toBeNull();
+    await userEvent.click(await screen.findByRole('link', { name: 'Contact' }));
     await screen.findByRole('heading', { name: 'Contact' });
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
   });
 

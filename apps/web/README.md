@@ -31,7 +31,7 @@ All network access is in `src/api`. The adapter validates responses with `@seman
 | `/tasks`, `/tasks/:intentId` | Read a proposal's request, rules and limits; approve, reject or stop it; see its purchases        | `/api/intents/:id/{approve,reject}`, `/api/tasks/:id/close`     |
 | `/agent`                     | Create, replace or revoke the one API key (shown once), connect Claude Code or Codex via the CLI  | `/api/keys`                                                     |
 
-`/faq` and `/contact` (a link to GitHub issues) also open without signing in.
+`/contact` (team email and the CTU Blockchain Lab page) also opens without signing in.
 
 The sidebar always shows what is left of the sponsored allowance (`/api/me` → `balance`). When it
 reaches zero the dashboard says agent keys stopped working and refuses to create a key; the gateway

@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Logo } from './logo';
 
-/** FAQ, Contact and the legal pages for visitors who aren't signed in. */
+/** Contact for visitors who aren't signed in. */
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
@@ -13,9 +13,6 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <Logo />
           </Link>
           <nav aria-label="Information" className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm" className="h-9">
-              <Link to="/faq">FAQ</Link>
-            </Button>
             <Button asChild variant="ghost" size="sm" className="h-9">
               <Link to="/contact">Contact</Link>
             </Button>
