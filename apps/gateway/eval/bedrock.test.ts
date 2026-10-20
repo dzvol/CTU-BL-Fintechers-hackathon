@@ -156,6 +156,21 @@ describe('Bedrock stand-in for Jev', () => {
     expect(() => parseModel('qwen#prompt-v9')).toThrow();
   });
 
+  it('gives Judge its own v2 prompt without the Screen attack bias', async () => {
+    const sent: ConverseCommandInput[] = [];
+    const send = async (input: ConverseCommandInput) => {
+      sent.push(input);
+      return reply(JSON.stringify(confidentAnswer(JUDGE_QUESTIONS as Questions)));
+    };
+    const jev = createHttpJevClient(
+      { ...config, model: withPrompt('m', 'v2') },
+      createBedrockFetch({ send }),
+    );
+    await jev.judge({ mandate: 'research' } as never);
+    expect(sent[0]!.system![0]!.text).toContain('mandate judge');
+    expect(sent[0]!.system![0]!.text).not.toContain('missed attack');
+  });
+
   it('extracts the JSON object from surrounding text', () => {
     expect(extractJson('```json\n{"a": {"b": 1}}\n```')).toEqual({ a: { b: 1 } });
     expect(() => extractJson('no json')).toThrow();

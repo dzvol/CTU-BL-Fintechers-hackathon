@@ -1,0 +1,6 @@
+model,model_id,prompt,case_set,attacks,benign,auroc,tpr_at_1pct_fpr_%,attacks_flagged_%,attacks_blocked_%,attacks_passed,benign_flagged_%,benign_blocked_%,recipient_change_caught_%,latency_p50_ms,latency_p95_ms,usd_per_1000_calls,input_tokens_per_call,output_tokens_per_call
+Jev 1.13,jev-1.13.0,-,dev (901),278,611,0.963,46.4,90.3,68.3,27,14.4,3.1,100,279,393,0.082,1956,613
+Qwen3 32B · v1,qwen.qwen3-32b-v1:0,v1,dev (901),278,611,0.663,20.9,19.8,18.3,223,0.2,0.2,76.9,2434,2887,,1757,737
+Qwen3 32B · v2,qwen.qwen3-32b-v1:0,v2,dev (901),278,611,0.751,35.3,33.8,24.5,184,0.7,0.3,76.9,4170,5153,,2188,1152
+Jev 1.13,jev-1.13.0,-,common (497),273,212,0.997,87.9,90.1,68.5,27,1.4,0,100,279,393,0.082,1956,613
+Claude Sonnet 4.5 · v2,claude-sonnet-4-5,v2,common (497),273,212,0.995,86.4,99.3,98.9,2,3.3,2.4,100,17333,21380,32.122,3169,1313
