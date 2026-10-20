@@ -15,8 +15,15 @@ export const CHAIN_READER_NETWORKS = {
   },
 } as const;
 
+// An empty variable in .env means unset.
+const network = z.preprocess(
+  (value) => value || undefined,
+  z.enum(['base-sepolia', 'base-mainnet']).optional(),
+);
 const envSchema = z.object({
-  CHAIN_READER_NETWORK: z.enum(['base-sepolia', 'base-mainnet']).default('base-sepolia'),
+  // Follows PAYMENT_NETWORK so the reader verifies on the chain the Signer signs for.
+  CHAIN_READER_NETWORK: network,
+  PAYMENT_NETWORK: network,
   CHAIN_READER_RPC_URL: z.string().optional(),
   BASE_SEPOLIA_RPC_URL: z.string().optional(),
   CHAIN_READER_CONFIRMATIONS: z.coerce.number().int().positive().default(1),
@@ -28,13 +35,12 @@ export function loadChainReaderConfig(source: NodeJS.ProcessEnv = process.env): 
   const result = envSchema.safeParse(source);
   if (!result.success) throw new Error('Invalid ChainReader environment configuration');
   const env = result.data;
+  const selected = env.CHAIN_READER_NETWORK ?? env.PAYMENT_NETWORK ?? 'base-sepolia';
   const config = ChainReaderConfigSchema.safeParse({
-    network: env.CHAIN_READER_NETWORK,
+    network: selected,
     rpcUrl:
       env.CHAIN_READER_RPC_URL ||
-      (env.CHAIN_READER_NETWORK === 'base-sepolia'
-        ? env.BASE_SEPOLIA_RPC_URL || undefined
-        : undefined),
+      (selected === 'base-sepolia' ? env.BASE_SEPOLIA_RPC_URL || undefined : undefined),
     confirmations: env.CHAIN_READER_CONFIRMATIONS,
     timeoutMs: env.CHAIN_READER_TIMEOUT_MS,
   });

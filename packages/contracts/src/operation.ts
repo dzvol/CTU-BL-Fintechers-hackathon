@@ -26,10 +26,17 @@ export const OperationStateSchema = z.enum([
 ]);
 export type OperationState = z.infer<typeof OperationStateSchema>;
 
+/**
+ * Chain the gateway pays on. One per deployment (PAYMENT_NETWORK); `base-mainnet` moves real USDC
+ * and must be switched on explicitly.
+ */
+export const PaymentNetworkSchema = z.enum(['base-sepolia', 'base-mainnet']);
+export type PaymentNetwork = z.infer<typeof PaymentNetworkSchema>;
+
 /** Merchant x402 offer after normalization. Only the supported profile gets this far. */
 export const NormalizedOfferSchema = z.object({
   scheme: z.literal('exact'),
-  network: z.literal('base-sepolia'),
+  network: PaymentNetworkSchema,
   /** USDC contract. */
   asset: AddressSchema,
   payTo: AddressSchema,

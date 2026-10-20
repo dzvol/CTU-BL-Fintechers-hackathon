@@ -1,4 +1,10 @@
-import type { IntentStatus, Operation, TaskStatus, VerdictReason } from '@semanticauth/contracts';
+import type {
+  IntentStatus,
+  Operation,
+  PaymentNetwork,
+  TaskStatus,
+  VerdictReason,
+} from '@semanticauth/contracts';
 import {
   ArrowLeftRight,
   Ban,
@@ -40,6 +46,12 @@ export interface Label {
 }
 
 /** Short, user-facing names and icons for the gateway's machine-readable reason codes. */
+/** Where an offer is paid; mainnet is real money, so it is spelled out. */
+export const NETWORK: Record<PaymentNetwork, string> = {
+  'base-sepolia': 'USDC on Base Sepolia (testnet)',
+  'base-mainnet': 'USDC on Base (mainnet)',
+};
+
 export const REASON: Record<VerdictReason, string> = {
   unsupported_offer: 'Unsupported payment',
   policy_limit_exceeded: 'Over the task limit',

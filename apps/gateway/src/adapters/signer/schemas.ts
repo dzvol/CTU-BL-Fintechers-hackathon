@@ -1,9 +1,14 @@
-import { AddressSchema, NormalizedOfferSchema, OperationIdSchema } from '@semanticauth/contracts';
+import {
+  AddressSchema,
+  NormalizedOfferSchema,
+  OperationIdSchema,
+  PaymentNetworkSchema,
+} from '@semanticauth/contracts';
 import { z } from 'zod';
 import { X402PaymentPayloadSchema, X402PaymentRequirementsSchema } from '../x402';
 
 export const SignerConfigSchema = z.object({
-  network: z.literal('base-sepolia').default('base-sepolia'),
+  network: PaymentNetworkSchema.default('base-sepolia'),
   expectedAddress: AddressSchema.optional(),
   authorizationTtlSeconds: z.number().int().positive().max(3600).default(120),
 });

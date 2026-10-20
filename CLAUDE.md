@@ -95,7 +95,9 @@ These hold even if a task seems to require breaking them. If it does, stop and a
    auto-retry a payment.
 7. The merchant's payment response is not proof. Settlement is confirmed by ChainReader on chain
    (token, amount, payer, recipient).
-8. Supported payment profile only: x402 `exact`, Base Sepolia, USDC, EIP-3009 signed via EIP-712.
+8. Supported payment profile only: x402 `exact`, USDC, EIP-3009 signed via EIP-712, on the one
+   network a deployment runs: Base Sepolia by default, Base mainnet (real USDC) only with an
+   explicit `PAYMENT_NETWORK=base-mainnet`. Signer and ChainReader always use the same network.
    Anything else is BLOCK (`unsupported_offer`).
 9. Users act only on their own keys, intents, tasks and operations; otherwise 403. Intent
    approval and REVIEW approval happen only through the dashboard session, never through an

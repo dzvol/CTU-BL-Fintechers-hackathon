@@ -1,3 +1,4 @@
+import type { PaymentNetwork } from '@semanticauth/contracts';
 import type { ChainReader } from '../adapters/chain-reader';
 import type { JevClient } from '../adapters/jev/jev-client';
 import type { Signer } from '../adapters/signer';
@@ -28,6 +29,8 @@ export function createServices(deps: {
   /** Undefined when SPONSOR_PRIVATE_KEY isn't set: payments are refused (fail closed). */
   signer: Signer | undefined;
   chainReader: ChainReader;
+  /** The one chain the gateway pays on (PAYMENT_NETWORK). */
+  network?: PaymentNetwork;
   /** Total the sponsor pool hands out over all users. */
   poolLimit: bigint;
   /** Tests may swap the rules; defaults to the real Policy. */
@@ -104,6 +107,7 @@ export function createServices(deps: {
       thresholds: deps.thresholds,
       signer: deps.signer,
       chainReader: deps.chainReader,
+      network: deps.network,
       poolLimit: deps.poolLimit,
       selectOffer: deps.selectOffer,
       settlementChecks: deps.settlementChecks,

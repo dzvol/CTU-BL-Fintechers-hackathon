@@ -58,6 +58,7 @@ export function createApp(config: Config, overrides: AppOverrides = {}) {
       overrides.signer ??
       (config.payments.signer ? createEoaSigner(config.payments.signer) : undefined),
     chainReader: overrides.chainReader ?? createRpcChainReader(config.payments.chainReader),
+    network: config.payments.network,
     poolLimit: config.payments.poolLimit,
     userAllocation: config.userAllocation,
     webBaseUrl: config.webBaseUrl,

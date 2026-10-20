@@ -9,7 +9,7 @@ import {
   createEoaSigner,
   Eip3009AuthorizationSchema,
   loadSignerConfig,
-  SIGNER_PROFILE,
+  PAYMENT_PROFILES,
   SignedPaymentPayloadSchema,
 } from './index';
 import type {
@@ -369,9 +369,13 @@ describe('EOA Signer', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { signer } = setup();
     const payment = signed(await signer.signPayment(input()));
-    expect(Object.keys(signer).sort()).toEqual(['address', 'signPayment']);
+    expect(Object.keys(signer).sort()).toEqual(['address', 'profile', 'signPayment']);
     expect(Object.isFrozen(signer)).toBe(true);
-    expect(JSON.parse(JSON.stringify(signer))).toEqual({ address: sponsor });
+    expect(Object.isFrozen(signer.profile)).toBe(true);
+    expect(JSON.parse(JSON.stringify(signer))).toEqual({
+      address: sponsor,
+      profile: PAYMENT_PROFILES['base-sepolia'],
+    });
     expect(inspect(signer)).not.toContain(testKey.slice(2));
     expect(JSON.stringify(payment)).not.toContain(testKey.slice(2));
     expect(log).not.toHaveBeenCalled();
@@ -480,7 +484,13 @@ describe('Signer configuration', () => {
     expect(
       loadSignerConfig({ SPONSOR_ADDRESS: sponsor, SIGNER_AUTHORIZATION_TTL_SECONDS: '60' }),
     ).toEqual({ network: 'base-sepolia', expectedAddress: sponsor, authorizationTtlSeconds: 60 });
-    expect(SIGNER_PROFILE.chainId).toBe(84532);
+    expect(PAYMENT_PROFILES['base-sepolia'].chainId).toBe(84532);
+  });
+
+  it('takes the network from PAYMENT_NETWORK, Sepolia when unset or empty', () => {
+    expect(loadSignerConfig({ PAYMENT_NETWORK: 'base-mainnet' }).network).toBe('base-mainnet');
+    expect(loadSignerConfig({ PAYMENT_NETWORK: '' }).network).toBe('base-sepolia');
+    expect(() => loadSignerConfig({ PAYMENT_NETWORK: 'ethereum' })).toThrow('PAYMENT_NETWORK');
   });
 
   it.each([
@@ -492,11 +502,66 @@ describe('Signer configuration', () => {
     expect(() => loadSignerConfig(source)).toThrow('Invalid Signer configuration');
   });
 
-  it('rejects a non-MVP network before loading any secret', () => {
+  it('rejects an unsupported network before loading any secret', () => {
     const readPrivateKey = vi.fn(() => testKey);
     expect(() =>
-      createEoaSigner({ network: 'base-mainnet' } as unknown as SignerConfig, { readPrivateKey }),
+      createEoaSigner({ network: 'ethereum' } as unknown as SignerConfig, { readPrivateKey }),
     ).toThrow('Invalid Signer configuration');
     expect(readPrivateKey).not.toHaveBeenCalled();
+  });
+});
+
+describe('EOA Signer on Base mainnet', () => {
+  const mainnet = PAYMENT_PROFILES['base-mainnet'];
+
+  function mainnetInput(): SignPaymentInput {
+    const value = input();
+    value.operation.offer = {
+      ...value.operation.offer,
+      network: 'base-mainnet',
+      asset: mainnet.token,
+    };
+    value.requirements = {
+      ...value.requirements,
+      network: mainnet.network,
+      asset: mainnet.token,
+      extra: { name: 'USD Coin', version: '2' },
+    };
+    return value;
+  }
+
+  it('signs with the mainnet USDC domain (chain 8453, "USD Coin")', async () => {
+    const { signer } = setup({ network: 'base-mainnet' });
+    expect(signer.profile.id).toBe('base-mainnet');
+    const payment = signed(await signer.signPayment(mainnetInput()));
+    const valid = await verifyTypedData({
+      address: sponsor,
+      domain: { name: 'USD Coin', version: '2', chainId: 8453, verifyingContract: mainnet.token },
+      types,
+      primaryType: 'TransferWithAuthorization',
+      message: message(payment),
+      signature: payment.payload.signature as Hex,
+    });
+    expect(valid).toBe(true);
+  });
+
+  it('refuses a Sepolia offer, and a Sepolia signer refuses a mainnet offer', async () => {
+    const onMainnet = setup({ network: 'base-mainnet' }).signer;
+    expect(await onMainnet.signPayment(input())).toEqual({
+      ok: false,
+      reason: 'unsupported_offer',
+    });
+    const onSepolia = setup().signer;
+    expect(await onSepolia.signPayment(mainnetInput())).toEqual({
+      ok: false,
+      reason: 'unsupported_offer',
+    });
+  });
+
+  it('refuses requirements that claim mainnet while the offer still says Sepolia', async () => {
+    const { signer } = setup({ network: 'base-mainnet' });
+    const value = mainnetInput();
+    value.operation.offer.network = 'base-sepolia';
+    expect(await signer.signPayment(value)).toEqual({ ok: false, reason: 'unsupported_offer' });
   });
 });

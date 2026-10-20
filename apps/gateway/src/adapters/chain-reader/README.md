@@ -80,7 +80,8 @@ const chainReader = createRpcChainReader({
 Or use `loadChainReaderConfig()` with these variables:
 
 ```dotenv
-CHAIN_READER_NETWORK=base-mainnet
+PAYMENT_NETWORK=base-mainnet          # the gateway's one payment network; the reader follows it
+CHAIN_READER_NETWORK=base-mainnet     # optional override, the gateway refuses a mismatch
 CHAIN_READER_RPC_URL=https://your-base-rpc.example
 CHAIN_READER_CONFIRMATIONS=2
 CHAIN_READER_TIMEOUT_MS=10000
@@ -88,8 +89,8 @@ CHAIN_READER_TIMEOUT_MS=10000
 
 An empty RPC override uses the selected network's viem default. On Sepolia only,
 the existing `BASE_SEPOLIA_RPC_URL` is respected. Selecting mainnet never inherits
-the Sepolia RPC or the existing merchant `USDC_ADDRESS` setting. Changing the
-reader's network does not change the gateway's payment/signing policy.
+the Sepolia RPC or the existing merchant `USDC_ADDRESS` setting. The Signer takes its network
+from `PAYMENT_NETWORK` too, and the gateway refuses to start when the two differ.
 
 The default timeout is 10 seconds for the whole verification; HTTP RPC retries
 and RPC caching are disabled. Inject the small `ChainReaderRpc` interface for

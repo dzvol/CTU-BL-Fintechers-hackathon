@@ -78,16 +78,23 @@ these snapshots but cannot prove the database state itself. It verifies:
 
 - operation state `reserved`, verdict `ALLOW`, reservation state `reserved`;
 - matching reservation/operation IDs and identical reserved/approved amount;
-- x402 `exact`, `eip155:84532`, and native Base Sepolia USDC;
+- x402 `exact` on the configured network with its native USDC, and the normalized offer's
+  `network` naming that same network;
 - identical normalized and merchant recipient/amount, and matching operation/resource URLs;
-- merchant domain metadata `extra.name = USDC`, `extra.version = 2`, and an absent
+- merchant domain metadata equal to the profile's `extra.name` / `extra.version`, and an absent
   or explicit `eip3009` transfer method. Permit2 and other profiles are rejected.
 
-The trusted signing domain is pinned to chain ID 84532, USDC contract
-`0x036CbD53842c5426634e7929541eC2318f3dCF7e`, name `USDC`, and version `2`.
-Merchant metadata cannot override it. The [x402 EIP-3009 implementation](https://github.com/x402-foundation/x402/blob/main/typescript/packages/mechanisms/evm/src/exact/client/eip3009.ts)
+The trusted signing domain comes from `PAYMENT_PROFILES` in `config.ts`, chosen once by
+`PAYMENT_NETWORK` (default `base-sepolia`). Merchant metadata cannot override it:
+
+| `PAYMENT_NETWORK` | x402 network   | chain ID | USDC contract                                | domain name | version |
+| ----------------- | -------------- | -------- | -------------------------------------------- | ----------- | ------- |
+| `base-sepolia`    | `eip155:84532` | 84532    | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | `USDC`      | `2`     |
+| `base-mainnet`    | `eip155:8453`  | 8453     | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | `USD Coin`  | `2`     |
+
+`base-mainnet` signs real USDC. The [x402 EIP-3009 implementation](https://github.com/x402-foundation/x402/blob/main/typescript/packages/mechanisms/evm/src/exact/client/eip3009.ts)
 describes the wire format; signing uses [viem EIP-712](https://viem.sh/docs/accounts/local/signTypedData).
-The configurable mainnet ChainReader does not enable mainnet signing.
+The gateway refuses to start when the Signer and the ChainReader are on different networks.
 
 Each authorization contains the shared EOA as `from`, the approved recipient as
 `to`, exact atomic `value`, `validAfter = 0`, and a cryptographically random 32-byte

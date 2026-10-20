@@ -83,7 +83,7 @@ Defaults: HTTPS, 15-second timeout (including body reading), 2 MiB response limi
 for example `http://localhost:4021/honest/market-snapshot`. Inject `fetch` for offline
 tests. No environment variables or dependencies are added.
 
-The service must enforce the supported exact/Base Sepolia/USDC/EIP-3009 profile,
+The service must enforce the supported exact/USDC/EIP-3009 profile on `PAYMENT_NETWORK`,
 run the full authorization pipeline, bind the signature to the approved request,
 and persist it before calling the paid method. The transport does not call Signer,
 Jev, the facilitator, the database, or ChainReader. DNS/IP egress filtering remains

@@ -19,7 +19,7 @@ export const testConfig: Config = {
   x402AllowHttpLocalhost: false,
   jev: undefined,
   jevVariant: JEV_VARIANTS.baseline,
-  payments: { signer: undefined, chainReader: {}, poolLimit: 20_000_000n },
+  payments: { network: 'base-sepolia', signer: undefined, chainReader: {}, poolLimit: 20_000_000n },
 };
 
 /** Fake Google: the callback `code` becomes the Google account id, so tests can log in as anyone. */

@@ -416,6 +416,16 @@ describe('ChainReader configuration', () => {
     ).toEqual({ network: 'base-mainnet', rpcUrl: undefined, confirmations: 1, timeoutMs: 10000 });
   });
 
+  it('follows PAYMENT_NETWORK unless CHAIN_READER_NETWORK overrides it', () => {
+    expect(loadChainReaderConfig({ PAYMENT_NETWORK: 'base-mainnet' }).network).toBe('base-mainnet');
+    expect(
+      loadChainReaderConfig({
+        PAYMENT_NETWORK: 'base-mainnet',
+        CHAIN_READER_NETWORK: 'base-sepolia',
+      }).network,
+    ).toBe('base-sepolia');
+  });
+
   it('supports an explicit RPC override and numeric environment settings', () => {
     expect(
       loadChainReaderConfig({
@@ -434,6 +444,7 @@ describe('ChainReader configuration', () => {
 
   it.each([
     { CHAIN_READER_NETWORK: 'unknown' },
+    { PAYMENT_NETWORK: 'ethereum' },
     { CHAIN_READER_RPC_URL: 'ftp://invalid.example' },
     { CHAIN_READER_CONFIRMATIONS: '0' },
     { CHAIN_READER_TIMEOUT_MS: 'invalid' },

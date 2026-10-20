@@ -4,6 +4,7 @@ import { c, fakeJev } from '../../../test/fake-jev';
 import { createFakeMerchant, MERCHANT, SETTLEMENT_TX } from '../../../test/fake-merchant';
 import { fakePayments } from '../../../test/fake-payments';
 import { createStore, openDatabase } from '../../adapters/store';
+import { PAYMENT_PROFILES } from '../../adapters/signer';
 import type { X402PaymentRequired } from '../../adapters/x402';
 import { selectOffer as selectSupportedOffer } from '../payment-gateway/offer-selection';
 import { defaultPolicy } from '../../domain/policy/policy';
@@ -29,7 +30,11 @@ function setup() {
   // The merchant's offer can change between the first request and the resumed one.
   const merchant = { amount: undefined as string | undefined };
   const selectOffer = vi.fn((paymentRequired: X402PaymentRequired, requestedUrl: string) => {
-    const selected = selectSupportedOffer(paymentRequired, requestedUrl)!;
+    const selected = selectSupportedOffer(
+      paymentRequired,
+      requestedUrl,
+      PAYMENT_PROFILES['base-sepolia'],
+    )!;
     if (merchant.amount) selected.offer.amount = merchant.amount;
     return selected;
   });

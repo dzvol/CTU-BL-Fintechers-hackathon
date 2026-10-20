@@ -16,6 +16,10 @@ CSRF origin check work without a proxy. Agents run on people's own machines and 
 - Use a **fresh sponsor wallet**. Fund it with Base Sepolia USDC and set `SPONSOR_POOL_USDC` at or
   below its balance: anyone who signs in gets `USER_ALLOCATION_USDC` from that pool.
 - Keep `numReplicas` at 1. SQLite, the rate limiter and restart recovery assume one process.
+- **Real money:** `PAYMENT_NETWORK=base-mainnet` pays real USDC on Base. Fund the sponsor wallet
+  with mainnet USDC, set `SPONSOR_ADDRESS` (required on mainnet), and keep
+  `USER_ALLOCATION_USDC` and `SPONSOR_POOL_USDC` small: every Google sign-in can spend its
+  allocation. The demo merchants are Sepolia-only, so their offers are blocked on mainnet.
 
 ## Steps
 
@@ -34,6 +38,7 @@ CSRF origin check work without a proxy. Agents run on people's own machines and 
    JEV_VARIANT=baseline
    SPONSOR_PRIVATE_KEY=0x…                    # sealed, the fresh wallet
    SPONSOR_ADDRESS=0x…
+   PAYMENT_NETWORK=base-sepolia               # base-mainnet = real USDC, see "Before going public"
    USER_ALLOCATION_USDC=5
    SPONSOR_POOL_USDC=20
    ```

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { PAYMENT_PROFILES } from '../../adapters/signer';
 import type { X402PaymentRequired, X402PaymentRequirements } from '../../adapters/x402';
 import { selectOffer, withMerchantText } from './offer-selection';
+
+const SEPOLIA = PAYMENT_PROFILES['base-sepolia'];
+const MAINNET = PAYMENT_PROFILES['base-mainnet'];
 
 const USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 const PAY_TO = '0x1111111111111111111111111111111111111111';
@@ -23,7 +27,7 @@ const offered = (...accepts: X402PaymentRequirements[]): X402PaymentRequired => 
 
 describe('selectOffer', () => {
   it('builds the NormalizedOffer for the requested URL, without merchant text', () => {
-    expect(selectOffer(offered(supported), REQUESTED)).toEqual({
+    expect(selectOffer(offered(supported), REQUESTED, SEPOLIA)).toEqual({
       requirements: supported,
       offer: {
         scheme: 'exact',
@@ -38,7 +42,9 @@ describe('selectOffer', () => {
 
   it('skips unsupported options and takes the first supported one', () => {
     const mainnet = { ...supported, network: 'eip155:8453', amount: '1' };
-    expect(selectOffer(offered(mainnet, supported), REQUESTED)?.requirements).toBe(supported);
+    expect(selectOffer(offered(mainnet, supported), REQUESTED, SEPOLIA)?.requirements).toBe(
+      supported,
+    );
   });
 
   it.each<[string, Partial<X402PaymentRequirements>]>([
@@ -56,12 +62,36 @@ describe('selectOffer', () => {
     ],
   ])('rejects %s', (_, change) => {
     const option = { ...supported, ...change } as X402PaymentRequirements;
-    expect(selectOffer(offered(option), REQUESTED)).toBeUndefined();
+    expect(selectOffer(offered(option), REQUESTED, SEPOLIA)).toBeUndefined();
+  });
+
+  describe('on Base mainnet', () => {
+    const mainnet: X402PaymentRequirements = {
+      ...supported,
+      network: 'eip155:8453',
+      asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      extra: { name: 'USD Coin', version: '2' },
+    };
+
+    it('takes the mainnet USDC offer and names the network', () => {
+      const selected = selectOffer(offered(supported, mainnet), REQUESTED, MAINNET);
+      expect(selected?.requirements).toBe(mainnet);
+      expect(selected?.offer.network).toBe('base-mainnet');
+    });
+
+    it.each<[string, Partial<X402PaymentRequirements>]>([
+      ['the Sepolia network', { network: 'eip155:84532' }],
+      ['the Sepolia USDC contract', { asset: USDC }],
+      ["the Sepolia contract's EIP-712 domain", { extra: { name: 'USDC', version: '2' } }],
+    ])('rejects %s', (_, change) => {
+      const option = { ...mainnet, ...change } as X402PaymentRequirements;
+      expect(selectOffer(offered(option), REQUESTED, MAINNET)).toBeUndefined();
+    });
   });
 });
 
 describe('withMerchantText', () => {
-  const offer = selectOffer(offered(supported), REQUESTED)!.offer;
+  const offer = selectOffer(offered(supported), REQUESTED, SEPOLIA)!.offer;
 
   it('adds what Screen read, for the dashboard, without touching the payment fields', () => {
     const withText = withMerchantText(offer, {

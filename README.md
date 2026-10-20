@@ -28,7 +28,8 @@ x402 offer → Normalizer → Policy → Screen → Judge → Decision → ALLOW
                (profile)   (rules)   (LLM)    (LLM)
 ```
 
-- **Normalizer** accepts only x402 v2 `exact`, Base Sepolia, USDC (EIP-3009).
+- **Normalizer** accepts only x402 v2 `exact`, USDC (EIP-3009) on the configured network: Base
+  Sepolia by default, Base mainnet with `PAYMENT_NETWORK=base-mainnet`.
 - **Policy** enforces deterministic limits; a Policy BLOCK never reaches the LLM.
 - **Screen** is the only stage that reads untrusted merchant text. It returns structured facts and
   manipulation signals.
@@ -93,7 +94,8 @@ npm run dev:merchants     # http://localhost:4021/health
 
 ## Data and safety
 
-- Testnet only (Base Sepolia, test USDC). No real money, no real personal data.
+- Testnet by default (Base Sepolia, test USDC). `PAYMENT_NETWORK=base-mainnet` pays real USDC
+  on Base; no real personal data either way.
 - The sponsor private key is a server-side secret read only by the Signer; agents and harnesses
   never receive it or a signed authorization.
 - Merchant text is treated as untrusted data: only Screen reads it, never Judge, and it is never

@@ -8,6 +8,7 @@ import {
   type OperationState,
   type PaidFetchInput,
   type PaidFetchResult,
+  type PaymentNetwork,
   type ReviewId,
   type Task,
   type TaskId,
@@ -16,7 +17,7 @@ import {
 } from '@semanticauth/contracts';
 import type { ChainReader, PaymentVerification } from '../../adapters/chain-reader';
 import type { JevClient } from '../../adapters/jev/jev-client';
-import { SIGNER_PROFILE, type Signer } from '../../adapters/signer';
+import { PAYMENT_PROFILES, type Signer } from '../../adapters/signer';
 import type {
   AllocationRepository,
   LedgerRepository,
@@ -212,6 +213,8 @@ export function createPaymentGateway(deps: {
   /** Undefined when SPONSOR_PRIVATE_KEY isn't set: every payment is refused (fail closed). */
   signer: Signer | undefined;
   chainReader: ChainReader;
+  /** The one chain offers are accepted and paid on (PAYMENT_NETWORK); defaults to Base Sepolia. */
+  network?: PaymentNetwork;
   /** Total the sponsor pool hands out over all users. */
   poolLimit: bigint;
   /** Tests may swap the offer selection; defaults to the supported x402 profile. */
@@ -223,7 +226,17 @@ export function createPaymentGateway(deps: {
   now?: () => Date;
 }): PaymentGateway {
   const now = deps.now ?? (() => new Date());
-  const selectOffer = deps.selectOffer ?? selectSupportedOffer;
+  const profile = PAYMENT_PROFILES[deps.network ?? 'base-sepolia'];
+  // Offers selected for one chain and signed for another would only fail at settlement.
+  if (deps.signer && deps.signer.profile.id !== profile.id) {
+    throw new Error(
+      `Signer network ${deps.signer.profile.id} does not match payment network ${profile.id}`,
+    );
+  }
+  const selectOffer =
+    deps.selectOffer ??
+    ((paymentRequired: X402PaymentRequired, requestedUrl: string) =>
+      selectSupportedOffer(paymentRequired, requestedUrl, profile));
   const checks = deps.settlementChecks ?? DEFAULT_SETTLEMENT_CHECKS;
 
   function track(op: OperationRecord): Run {
@@ -315,7 +328,7 @@ export function createPaymentGateway(deps: {
     }
     const selected = selectOffer(result.paymentRequired, request.url);
     if (!selected) {
-      return refused('unsupported_offer', 'no payment option matches exact/Base Sepolia/USDC');
+      return refused('unsupported_offer', `no payment option matches exact/${profile.label}/USDC`);
     }
     const screenState = toScreenState(screenInput.queries[0]!);
     return {
@@ -503,7 +516,7 @@ export function createPaymentGateway(deps: {
         recipient: authorization.to,
         token: requirements.asset,
         amount,
-        chainId: SIGNER_PROFILE.chainId,
+        chainId: profile.chainId,
         nonce: authorization.nonce,
         validBefore: authorization.validBefore,
         paymentSignature,

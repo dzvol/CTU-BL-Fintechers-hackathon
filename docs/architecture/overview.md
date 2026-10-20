@@ -61,7 +61,8 @@ merchant 402 → Normalizer ─ unsupported ────────────
 ```
 
 - **Normalizer** parses the x402 offer into one internal shape, checks the supported profile
-  (x402 `exact`, Base Sepolia, USDC, EIP-3009), extracts token, network, recipient and amount as
+  (x402 `exact`, USDC, EIP-3009 on the deployment's `PAYMENT_NETWORK`: Base Sepolia by default,
+  Base mainnet when switched on explicitly), extracts token, network, recipient and amount as
   integer atomic units, and rejects anything invalid. It decides nothing else.
 - **Policy** checks the max price per operation, the user's daily limit, the remaining task
   budget, the remaining user allocation / pool, and other deterministic safety rules. Policy
@@ -231,7 +232,8 @@ payments and Jev decisions.
 
 - One Node.js process (Hono), one SQLite database on persistent storage, no microservices.
 - One shared sponsor EOA on Base Sepolia funded with test USDC; users have only DB allocations
-  (a few USDC each, set on first Google login).
+  (a few USDC each, set on first Google login). `PAYMENT_NETWORK=base-mainnet` moves the whole
+  deployment to Base mainnet with real USDC; one deployment never pays on two networks.
 - No merchant allowlist: any public HTTPS URL may be fetched, but only a valid supported x402
   offer gets paid.
 - The key lives in server secrets for now; production would use KMS or a managed wallet.

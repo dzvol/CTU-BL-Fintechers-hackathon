@@ -1,6 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
-import { parseUsdc, UsdcDecimalSchema } from '@semanticauth/contracts';
+import {
+  parseUsdc,
+  PaymentNetworkSchema,
+  UsdcDecimalSchema,
+  type PaymentNetwork,
+} from '@semanticauth/contracts';
 import { z } from 'zod';
 import { loadChainReaderConfig, type ChainReaderConfig } from './adapters/chain-reader';
 import type { JevConfig } from './adapters/jev/jev-client';
@@ -10,7 +15,7 @@ import {
   JEV_VARIANTS,
   type JevVariant,
 } from './domain/jev/variants';
-import { loadSignerConfig, type SignerConfig } from './adapters/signer';
+import { loadSignerConfig, PAYMENT_PROFILES, type SignerConfig } from './adapters/signer';
 
 const optional = z
   .string()
@@ -36,6 +41,8 @@ const EnvSchema = z.object({
   SPONSOR_POOL_USDC: UsdcDecimalSchema.default('20'),
   // Only whether it is set; the Signer reads the value itself and nothing else may.
   SPONSOR_PRIVATE_KEY: optional,
+  SPONSOR_ADDRESS: optional,
+  PAYMENT_NETWORK: optional.pipe(PaymentNetworkSchema.default('base-sepolia')),
   X402_ALLOW_HTTP_LOCALHOST: z.stringbool().default(false),
   JEV_API_URL: optional.pipe(z.url().optional()),
   JEV_API_KEY: optional,
@@ -77,6 +84,8 @@ export interface Config {
 }
 
 export interface PaymentsConfig {
+  /** The one chain offers are accepted and paid on; `base-mainnet` moves real USDC. */
+  network: PaymentNetwork;
   /** Undefined without SPONSOR_PRIVATE_KEY; every paid offer is then blocked (fail closed). */
   signer: SignerConfig | undefined;
   chainReader: ChainReaderConfig;
@@ -111,6 +120,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
   if (!e.SESSION_SECRET) console.warn('SESSION_SECRET not set: using a random one per process');
 
+  const network = e.PAYMENT_NETWORK;
+  const chainReader = loadChainReaderConfig(env);
+  // Signing on one chain and verifying on another would leave every payment `unknown`.
+  if (chainReader.network !== network) {
+    throw new Error(
+      `CHAIN_READER_NETWORK (${chainReader.network}) must match PAYMENT_NETWORK (${network})`,
+    );
+  }
+  if (network === 'base-mainnet') {
+    // Real money: a key swapped by mistake must not start paying from an unknown wallet.
+    if (e.SPONSOR_PRIVATE_KEY && !e.SPONSOR_ADDRESS) {
+      throw new Error('SPONSOR_ADDRESS is required when PAYMENT_NETWORK=base-mainnet');
+    }
+    console.warn(
+      `PAYMENT_NETWORK=base-mainnet: payments move real USDC on ${PAYMENT_PROFILES[network].label}`,
+    );
+  }
+
   return {
     port: e.PORT,
     webBaseUrl: e.WEB_BASE_URL,
@@ -132,8 +159,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       : undefined,
     jevVariant: JEV_VARIANTS[e.JEV_VARIANT],
     payments: {
+      network,
       signer: e.SPONSOR_PRIVATE_KEY ? loadSignerConfig(env) : undefined,
-      chainReader: loadChainReaderConfig(env),
+      chainReader,
       poolLimit: parseUsdc(e.SPONSOR_POOL_USDC),
     },
   };

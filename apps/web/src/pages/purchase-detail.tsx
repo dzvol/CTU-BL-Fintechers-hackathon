@@ -14,7 +14,7 @@ import {
 import { OfferSummary } from '@/components/sa/offer-summary';
 import { ReviewCard } from '@/components/sa/review-card';
 import { Button } from '@/components/ui/button';
-import { REASON, host, outcome, shortHex } from '@/lib/labels';
+import { NETWORK, REASON, host, outcome, shortHex } from '@/lib/labels';
 import { fromNow, fullTime } from '@/lib/time';
 
 export function PurchaseDetail() {
@@ -103,7 +103,7 @@ export function PurchaseDetail() {
                     <CopyButton value={op.offer.payTo} label="Copy recipient" className="size-7" />
                   </span>
                 </Field>
-                <Field label="Network">USDC on Base Sepolia</Field>
+                <Field label="Network">{NETWORK[op.offer.network]}</Field>
               </>
             ) : (
               <Field label="Price">

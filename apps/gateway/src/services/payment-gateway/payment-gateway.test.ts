@@ -1,4 +1,5 @@
-import type { IntentProposal } from '@semanticauth/contracts';
+import type { IntentProposal, PaymentNetwork } from '@semanticauth/contracts';
+import { generatePrivateKey } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
 import { c, fakeJev } from '../../../test/fake-jev';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../../../test/fake-merchant';
 import { fakeChainReader, fakePayments } from '../../../test/fake-payments';
 import type { ChainReader } from '../../adapters/chain-reader';
+import { createEoaSigner, PAYMENT_PROFILES } from '../../adapters/signer';
 import { createStore, openDatabase, type OperationRecord } from '../../adapters/store';
 import { createServices } from '..';
 import type { AgentContext } from '../context';
@@ -29,7 +31,7 @@ const PAID = `${MERCHANT}/paid`;
 function setup(
   options: {
     chainReader?: ChainReader;
-    payments?: Partial<ReturnType<typeof fakePayments>>;
+    payments?: Partial<ReturnType<typeof fakePayments>> & { network?: PaymentNetwork };
     jev?: ReturnType<typeof fakeJev>;
   } = {},
 ) {
@@ -245,11 +247,38 @@ describe('PaymentGateway payment execution', () => {
     expect(merchant.payments).toHaveLength(0);
   });
 
+  it('refuses to start when the Signer signs for another network', () => {
+    expect(() => setup({ payments: { network: 'base-mainnet' } })).toThrow(
+      'does not match payment network base-mainnet',
+    );
+  });
+
+  it('on mainnet, blocks a Sepolia offer before Jev and pays nothing', async () => {
+    const { payments, store, alice, startTask, merchant, jev } = setup({
+      payments: {
+        network: 'base-mainnet',
+        signer: createEoaSigner(
+          { network: 'base-mainnet' },
+          { readPrivateKey: generatePrivateKey },
+        ),
+      },
+    });
+    startTask(alice);
+
+    const result = await payments.paidFetch(alice, { url: PAID });
+    expect(result).toMatchObject({ state: 'blocked', reason: 'unsupported_offer' });
+    expect(result.message).toContain('exact/Base/USDC');
+    expect(jev.screen).not.toHaveBeenCalled();
+    expect(store.ledger.findByOperation(result.operationId)).toBeUndefined();
+    expect(merchant.payments).toHaveLength(0);
+  });
+
   it('releases the reservation when signing fails', async () => {
     const { payments, store, alice, startTask, merchant } = setup({
       payments: {
         signer: {
           address: '0x2222222222222222222222222222222222222222',
+          profile: PAYMENT_PROFILES['base-sepolia'],
           signPayment: async () => ({ ok: false, reason: 'signing_failed' }),
         },
       },

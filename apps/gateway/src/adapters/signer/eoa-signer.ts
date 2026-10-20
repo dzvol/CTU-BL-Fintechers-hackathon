@@ -2,13 +2,15 @@ import { randomBytes } from 'node:crypto';
 import { getAddress, zeroAddress } from 'viem';
 import type { Address, Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { SIGNER_PROFILE } from './config';
+import { PAYMENT_PROFILES, type PaymentProfile } from './config';
 import { SignerConfigSchema, SignPaymentInputSchema, SignedPaymentPayloadSchema } from './schemas';
 import type { SignerConfig, SignPaymentInput, SignPaymentResult } from './schemas';
 
 export interface Signer {
   /** Public sponsor address. The account and its signing methods stay inside the adapter. */
   readonly address: Address;
+  /** The one network this Signer signs for (PAYMENT_NETWORK). */
+  readonly profile: Readonly<PaymentProfile>;
   /** Internal use by PaymentGateway only, after ALLOW and a committed reservation. */
   signPayment(input: SignPaymentInput): Promise<SignPaymentResult>;
 }
@@ -61,9 +63,11 @@ export function createEoaSigner(
     throw new Error('Sponsor wallet address does not match configuration');
   }
   const now = dependencies.now ?? (() => new Date());
+  const profile = PAYMENT_PROFILES[options.network];
 
   return Object.freeze({
     address: account.address,
+    profile,
     async signPayment(input: SignPaymentInput): Promise<SignPaymentResult> {
       const validated = SignPaymentInputSchema.safeParse(input);
       if (!validated.success) return { ok: false, reason: 'invalid_input' };
@@ -71,12 +75,13 @@ export function createEoaSigner(
       const { offer } = operation;
       const extra = requirements.extra;
       if (
-        requirements.scheme !== SIGNER_PROFILE.scheme ||
-        requirements.network !== SIGNER_PROFILE.network ||
-        !equalAddress(requirements.asset, SIGNER_PROFILE.token) ||
-        !equalAddress(offer.asset, SIGNER_PROFILE.token) ||
-        extra?.name !== SIGNER_PROFILE.domainName ||
-        extra.version !== SIGNER_PROFILE.domainVersion ||
+        requirements.scheme !== profile.scheme ||
+        requirements.network !== profile.network ||
+        offer.network !== profile.id ||
+        !equalAddress(requirements.asset, profile.token) ||
+        !equalAddress(offer.asset, profile.token) ||
+        extra?.name !== profile.domainName ||
+        extra.version !== profile.domainVersion ||
         (extra.assetTransferMethod !== undefined && extra.assetTransferMethod !== 'eip3009')
       ) {
         return { ok: false, reason: 'unsupported_offer' };
@@ -112,10 +117,10 @@ export function createEoaSigner(
         };
         const signature = await account.signTypedData({
           domain: {
-            name: SIGNER_PROFILE.domainName,
-            version: SIGNER_PROFILE.domainVersion,
-            chainId: SIGNER_PROFILE.chainId,
-            verifyingContract: SIGNER_PROFILE.token,
+            name: profile.domainName,
+            version: profile.domainVersion,
+            chainId: profile.chainId,
+            verifyingContract: profile.token,
           },
           types: EIP3009_AUTHORIZATION_TYPES,
           primaryType: 'TransferWithAuthorization',
