@@ -27,13 +27,21 @@ import { cn } from '@/lib/utils';
 const GATEWAY_URL =
   window.location.port === '5173' ? 'http://localhost:8787' : window.location.origin;
 
+const REPO_URL = 'https://github.com/dzvol/CTU-BL-Fintechers-hackathon.git';
+// The CLI and the plugin ship in the repository; npx runs the CLI from its node_modules.
+const CLONE = `git clone ${REPO_URL} semanticauth\ncd semanticauth\nnpm install`;
+
 const HARNESSES = {
   'claude-code': {
     label: 'Claude Code',
-    install: 'semanticauth install claude-code',
+    install: 'npx semanticauth install claude-code',
     run: 'claude',
   },
-  codex: { label: 'Codex', install: 'semanticauth install codex', run: 'semanticauth run codex' },
+  codex: {
+    label: 'Codex',
+    install: 'npx semanticauth install codex',
+    run: 'npx semanticauth run codex',
+  },
 } as const;
 type Harness = keyof typeof HARNESSES;
 
@@ -282,21 +290,24 @@ export function Agent() {
           ))}
         </div>
         <ol className="space-y-5" role="tabpanel">
-          <Step
-            n={1}
-            title="Store the key"
-            hint="Paste it when asked. It's kept out of your shell history."
-          >
-            <Code>semanticauth auth</Code>
+          <Step n={1} title="Get the CLI" hint="Needs git and Node.js 22 or newer.">
+            <Code>{CLONE}</Code>
           </Step>
-          <Step n={2} title={`Add SemanticAuth to ${h.label}`}>
+          <Step
+            n={2}
+            title="Connect it to this gateway and store the key"
+            hint="Paste the key when asked. It's kept out of your shell history."
+          >
+            <Code>{`npx semanticauth config set gateway_url ${GATEWAY_URL}\nnpx semanticauth auth`}</Code>
+          </Step>
+          <Step n={3} title={`Add SemanticAuth to ${h.label}`}>
             <Code>{h.install}</Code>
           </Step>
-          <Step n={3} title="Check the connection">
-            <Code>semanticauth doctor</Code>
+          <Step n={4} title="Check the connection">
+            <Code>npx semanticauth doctor</Code>
           </Step>
           <Step
-            n={4}
+            n={5}
             title="Ask your agent for a task"
             hint="Start it, describe what you need, and approve its proposal on Overview."
           >
@@ -311,11 +322,6 @@ export function Agent() {
             <p className="text-muted-foreground">MCP over HTTP, with the key as a bearer token:</p>
             <Code>{`${GATEWAY_URL}/mcp\nAuthorization: Bearer <your key>`}</Code>
             <p className="text-muted-foreground">
-              The CLI runs from the repository:{' '}
-              <code className="font-mono text-[13px] text-foreground">
-                npx tsx packages/cli/src/index.ts
-              </code>
-              .{' '}
               <a
                 href="/agent-skill.md"
                 target="_blank"

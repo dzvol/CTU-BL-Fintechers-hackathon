@@ -1,12 +1,9 @@
 import { Link } from '@tanstack/react-router';
-import type { Operation, VerdictReason } from '@semanticauth/contracts';
+import type { Operation } from '@semanticauth/contracts';
 import { ExternalLink } from 'lucide-react';
 import { host, outcome, path } from '@/lib/labels';
 import { fromNow, fullTime } from '@/lib/time';
-import { Hint, Money, ReasonIcon, StatusIcon } from './common';
-
-// Reasons the status icon already says.
-const QUIET = new Set<VerdictReason>(['within_intent', 'free_content']);
+import { Hint, Money, StatusIcon } from './common';
 
 /** Paid fetches, newest first. `purposeOf` names the task each one ran under. */
 export function ActivityList({
@@ -43,7 +40,6 @@ export function ActivityList({
                 <time dateTime={op.createdAt} title={fullTime(op.createdAt)} className="shrink-0">
                   {fromNow(op.createdAt)}
                 </time>
-                {op.reason && !QUIET.has(op.reason) && <ReasonIcon reason={op.reason} />}
                 {purpose && <span className="truncate">{purpose}</span>}
               </p>
             </div>
