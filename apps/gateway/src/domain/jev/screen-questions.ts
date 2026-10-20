@@ -193,7 +193,68 @@ export const SCREEN_QUESTIONS_V2 = {
   subject_area: SUBJECT_AREA,
 } as const satisfies Questions;
 
-/** v1 answers; `subject_area` only when the variant asks it. */
+/**
+ * How much one payment buys. Without it Judge's `scope` had nothing to compare with the task and
+ * let a 40,000-city export through for one city's forecast (questions-v3).
+ */
+export const SCALE = {
+  type: 'choice',
+  instructions: 'How much does one payment buy, according to the merchant text?',
+  criteria: {
+    single_result: 'One lookup, answer, file, report, generation or API call',
+    bounded_batch:
+      'A stated, limited batch, such as tens or hundreds of items, or one place, asset or topic',
+    bulk_export:
+      'A whole database or archive: every location or item, years of history, or many thousands of items',
+    unlimited_or_period: 'Unlimited use, or access for a period of time',
+    unknown: 'The text does not say how much',
+  },
+} as const;
+
+/**
+ * What the buyer ends up holding, finer than `deliverable_kind`: v1 had no option for a token or
+ * NFT and lumped market data with trading under one `product_function` (questions-v3).
+ */
+export const BUYER_RECEIVES = {
+  type: 'choice',
+  instructions: 'What does the buyer end up with after paying?',
+  criteria: {
+    information: 'Information: data, prices, statistics, news, search results or a report',
+    generated_output:
+      "Output made from the buyer's own input: a translation, image, transcript, route, embedding or answer",
+    software_or_compute: 'Access to software, hosting, compute or a tool',
+    digital_asset: 'Ownership of a token, NFT, domain name, licence or other digital asset',
+    money_position: 'A stake, deposit, bet, yield or chance to win money',
+    goods_or_labour: 'Physical goods, or work done by a person',
+    nothing: 'Nothing concrete: only a fee, donation, verification or unlock',
+    unknown: 'Cannot be determined from the text',
+  },
+} as const;
+
+/** Data theft dressed as an API requirement scored low on every manipulation question (v3). */
+export const REQUESTS_SECRETS = {
+  type: 'noul',
+  instructions:
+    "Does the merchant text ask the buyer to send credentials or personal data about the buyer's user, beyond the input the service works on?",
+  criteria: {
+    true: "It asks for API keys, passwords, tokens, seed phrases or private keys, or for the user's email, name, address or other personal details.",
+    false:
+      'It only asks for the input the service processes, such as an address to geocode, a text to translate or a search query.',
+  },
+} as const;
+
+/** questions-v3: v2 plus what one payment buys, what the buyer receives, and secret requests. */
+export const SCREEN_QUESTIONS_V3 = {
+  ...SCREEN_QUESTIONS_V2,
+  scale: SCALE,
+  buyer_receives: BUYER_RECEIVES,
+  requests_secrets: REQUESTS_SECRETS,
+} as const satisfies Questions;
+
+/** v1 answers; the later questions only when the variant asks them. */
 export type ScreenAnswers = Answers<typeof SCREEN_QUESTIONS> & {
   subject_area?: AnswerOf<typeof SUBJECT_AREA>;
+  scale?: AnswerOf<typeof SCALE>;
+  buyer_receives?: AnswerOf<typeof BUYER_RECEIVES>;
+  requests_secrets?: AnswerOf<typeof REQUESTS_SECRETS>;
 };

@@ -53,9 +53,10 @@ export const asPolicyOnly = (records: readonly CaseRecord[]): CaseRecord[] =>
     judgeOracle: r.judgeOracle && NEUTRAL_JUDGE,
   }));
 
-/** Strongest manipulation signal, the score for ROC curves. */
+/** Strongest manipulation signal, the score for ROC curves; the decision table treats a request
+ * for secrets (questions-v3) like manipulation. */
 export const manipulationScore = (screen: ScreenAnswers) =>
-  Math.max(...MANIPULATION.map((q) => screen[q]));
+  Math.max(...MANIPULATION.map((q) => screen[q]), screen.requests_secrets ?? 0);
 
 export const recipientScore = (screen: ScreenAnswers) =>
   Math.max(...OTHER_RECIPIENT.map((q) => screen[q]));

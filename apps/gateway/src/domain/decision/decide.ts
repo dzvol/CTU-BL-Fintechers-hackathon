@@ -43,6 +43,11 @@ export interface DecisionRules {
   reviewUnclearConsistency: boolean;
   /** What Judge's `topic_fit` = different_subject does (only variants that ask topic_fit). */
   topicMismatch: 'block' | 'review' | 'ignore';
+  /**
+   * REVIEW when Screen's `buyer_receives` says the buyer would own a digital asset or a financial
+   * position (only variants that ask it). Judge read an NFT mint as fitting an image task.
+   */
+  assetPurchase: 'review' | 'ignore';
 }
 
 export const DEFAULT_RULES: DecisionRules = {
@@ -50,6 +55,7 @@ export const DEFAULT_RULES: DecisionRules = {
   deliverableBelow: YES,
   reviewUnclearConsistency: false,
   topicMismatch: 'ignore',
+  assetPurchase: 'ignore',
 };
 
 /** Every tunable cut-off of the decision table, so the offline evaluation can tune them. */
@@ -124,9 +130,14 @@ export function decide(
   const listed = (questions: ScreenFlag[]) =>
     questions.map((q) => `${q} ${screen[q].toFixed(2)}`).join(', ');
 
+  // Asked only by variants with questions-v3; absent means no signal.
+  const secrets = screen.requests_secrets ?? 0;
+  const secretsFlag = `Screen flagged requests_secrets ${secrets.toFixed(2)}`;
+
   // BLOCK
   const injection = flagged(MANIPULATION, thresholds.injection);
   if (injection.length > 0) return block('prompt_injection', `Screen flagged ${listed(injection)}`);
+  if (secrets >= thresholds.injection) return block('prompt_injection', secretsFlag);
   if (judge.mandate_rules.choice === 'forbidden') {
     return block('off_intent', 'Judge: a forbidden rule of the intent applies');
   }
@@ -150,6 +161,7 @@ export function decide(
   if (manipulation.length > 0) {
     return review('suspicious_offer', `Screen flagged ${listed(manipulation)}`);
   }
+  if (secrets >= thresholds.yes) return review('suspicious_offer', secretsFlag);
   const billing = screen.billing_basis.choice;
   if (
     billing === 'recurring_subscription' ||
@@ -160,6 +172,13 @@ export function decide(
       'subscription',
       `Screen: billed as ${billing}, offer ${screen.offer_type.choice}`,
     );
+  }
+  const receives = screen.buyer_receives?.choice;
+  if (
+    rules.assetPurchase === 'review' &&
+    (receives === 'digital_asset' || receives === 'money_position')
+  ) {
+    return review('unclear_fit', `Screen: the buyer would receive ${receives}`);
   }
   if (screen.urgency >= thresholds.yes) return review('suspicious_offer', 'Screen flagged urgency');
   if (screen.purpose_consistency.choice === 'contradictory') {
