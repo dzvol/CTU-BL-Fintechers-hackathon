@@ -49,4 +49,20 @@ describe('Jev variants', () => {
     expect(thresholds).toEqual(DEFAULT_THRESHOLDS);
     expect(rules).toEqual({ topicMismatch: 'block' });
   });
+
+  it('keeps the settings of questions-v2 in questions-v3, so only the questions differ', () => {
+    expect(JEV_VARIANTS['questions-v3'].thresholds).toEqual(
+      JEV_VARIANTS['questions-v2'].thresholds,
+    );
+  });
+
+  it('adds only the asset rule to questions-v3 in v3-assets', () => {
+    const v3 = JEV_VARIANTS['questions-v3'];
+    const assets = JEV_VARIANTS['v3-assets'];
+    expect(assets.questions).toBe(v3.questions);
+    expect(assets.thresholds).toEqual({
+      ...v3.thresholds,
+      rules: { ...v3.thresholds.rules, assetPurchase: 'review' },
+    });
+  });
 });

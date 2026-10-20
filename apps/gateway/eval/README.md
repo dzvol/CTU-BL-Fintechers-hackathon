@@ -40,7 +40,7 @@ left out: it has neither merchant offer text nor an approved mandate, the two in
 | [LLMail-Inject](https://huggingface.co/datasets/microsoft/llmail-inject-challenge) ph. 2 | MIT     | adaptive attacks labelled by behaviour (`api_triggered`), FP emails |
 | [NotInject](https://huggingface.co/datasets/leolee99/NotInject)                          | MIT     | benign sentences full of trigger words (over-defence)               |
 | `fixtures/commerce-texts.json`                                                           | ours    | 47 merchant-domain attacks (20 recipient changes), 50 hard benign   |
-| `fixtures/e2e.jsonl`                                                                     | ours    | 171 end-to-end cases incl. 30 red-team cases pinned to test         |
+| `fixtures/e2e.jsonl`                                                                     | ours    | 170 end-to-end cases incl. 30 red-team cases pinned to test         |
 | `fixtures/bazaar-labels.json` × `fixtures/intents.json`                                  | ours    | Judge pairs by construction (200 labeled offers × 24 intents)       |
 
 Published sources keep only behaviour-based labels (LLMail's LLM-judged labels are ignored).
@@ -58,8 +58,8 @@ A person reviews a draft by putting their name in `author` (see Labeling below).
 | subscription                   | REVIEW                        | 8+1   |
 | off_intent, forbidden, scam    | BLOCK (REVIEW acceptable)     | 28+1  |
 | policy, policy_edge            | BLOCK / ALLOW at the limit    | 9+1   |
-| beyond_need                    | REVIEW (BLOCK acceptable)     | 6     |
-| ambiguous                      | reported apart, not scored    | 6     |
+| beyond_need                    | REVIEW (BLOCK acceptable)     | 4     |
+| ambiguous                      | reported apart, not scored    | 7     |
 | redteam, redteam_benign (test) | written against our questions | 22+8  |
 
 (+1 = the `tests/merchants` scenarios.) Red-team cases are pinned to `test`: they are never
@@ -90,7 +90,7 @@ datasets/       sources, adapters, fixture loaders, build (role B)
 fixtures/       committed, person-checked inputs (role B)
 cli/            npm scripts
 data/           gitignored: raw downloads, built cases, cache, dev results, labeling worksheets
-results/        committed final test runs with their Jev cache
+results/        gitignored: final test runs with their Jev cache
 ```
 
 ## Commands (run in apps/gateway, or add `-w @semanticauth/gateway` from the root)
@@ -119,7 +119,8 @@ npm run eval -- --all --split test --final             # once, at the end
 
 A final run writes `results/<run>/` with `records.json`, `summary.json`, `report.md`,
 `manifest.json` (git commit, model, question hashes, thresholds, source hashes) and
-`jev-cache.jsonl` (exactly the answers it used). Anyone can reproduce it without a Jev key:
+`jev-cache.jsonl` (exactly the answers it used). The folder is gitignored (the records are
+millions of lines); copy it to whoever needs it, and they can reproduce it without a Jev key:
 `npm run eval -- --all --split test --final --offline --cache results/<run>/jev-cache.jsonl`.
 
 ## Jev variants
@@ -136,6 +137,8 @@ prints a comparison against every variant and against Policy alone (also in
 | `strict`       | when in doubt, ask the user                            | v1        | flag at 0.35, surer Judge (0.75/0.85/0.95), review unclear texts    |
 | `balanced`     | decide instead of asking                               | v1        | block at 0.7, Judge 0.4/0.55/0.75, missing deliverable only if none |
 | `questions-v2` | different questions: subject from a fixed list → Judge | v2        | default + block on a subject mismatch                               |
+| `questions-v3` | v2 + scale, what the buyer receives, secret requests   | v3        | same as questions-v2                                                |
+| `v3-assets`    | v3, and always ask before buying a token or position   | v3        | questions-v2 settings + review an asset or financial position       |
 
 Rules for adding one:
 
@@ -223,4 +226,4 @@ Phase 1–3 (drafted by an agent, waiting for people)
 
 Phase 4 (final)
 
-- [ ] Final test run together (`--final`), commit `results/<run>/`, hand numbers to member 2
+- [ ] Final test run together (`--final`), keep `results/<run>/`, hand numbers to member 2

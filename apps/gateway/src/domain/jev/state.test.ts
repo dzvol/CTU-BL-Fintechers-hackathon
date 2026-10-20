@@ -86,4 +86,20 @@ describe('toJudgeState', () => {
         .offer_as_extracted_from_merchant_text,
     ).not.toHaveProperty('subject_area');
   });
+
+  it("passes v3's scale and what the buyer receives, but not the secrets score", () => {
+    const screen = {
+      ...HONEST_SCREEN,
+      scale: { ...c('bulk_export', 0.8), note: INJECTION },
+      buyer_receives: c('information', 0.9),
+      requests_secrets: 0.97,
+    } as typeof HONEST_SCREEN;
+    const state = toJudgeState({ intent, facts: {}, screen });
+    expect(state.offer_as_extracted_from_merchant_text).toMatchObject({
+      scale: 'bulk_export',
+      buyer_receives: 'information',
+    });
+    expect(JSON.stringify(state)).not.toContain('IGNORE');
+    expect(JSON.stringify(state)).not.toContain('requests_secrets');
+  });
 });

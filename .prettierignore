@@ -6,3 +6,8 @@ package-lock.json
 
 # Google Search Console ownership file: Google compares it byte for byte.
 apps/web/public/google*.html
+
+# Evaluation output: written by the eval scripts and compared byte for byte when reproduced.
+apps/gateway/eval/results/
+apps/gateway/eval/snapshots/
+apps/gateway/eval/data/

@@ -1,2 +1,4 @@
 # Named dev snapshots are local working state, not committed.
 snapshots/
+# Final test runs are ~2 million lines of records; share the numbers, not the run.
+results/

@@ -92,6 +92,32 @@ export const JUDGE_QUESTIONS_V2 = {
   topic_fit: TOPIC_FIT,
 } as const satisfies Questions;
 
+/**
+ * questions-v3: v2 with `mandate_purpose` also reading the approved purchase list (honest news and
+ * market-data purchases got "cannot tell" from the purpose sentence alone), and `scope` reading the
+ * new `scale`. Option keys stay, so the decision table reads them as before.
+ */
+export const JUDGE_QUESTIONS_V3 = {
+  ...JUDGE_QUESTIONS_V2,
+  mandate_purpose: {
+    ...JUDGE_QUESTIONS.mandate_purpose,
+    instructions:
+      'Is a purchase like `offer_as_extracted_from_merchant_text` one of `mandate.allowed_purchases`, or otherwise within `mandate.purpose`?',
+  },
+  scope: {
+    type: 'choice',
+    instructions:
+      'Does how much a purchase like `offer_as_extracted_from_merchant_text` buys (its `scale`) and for how long match what `task` needs?',
+    criteria: {
+      proportionate:
+        'Roughly what the task needs: one result for one question, a batch for a batch, even if the price is a large share of the budget',
+      far_beyond_need:
+        'Far more than the task needs: a bulk export or archive for a few items, unlimited or long access for a one-off task, enterprise tiers',
+      no_information: 'The scale is unknown',
+    },
+  },
+} as const satisfies Questions;
+
 /** v1 answers; `topic_fit` only when the variant asks it. */
 export type JudgeAnswers = Answers<typeof JUDGE_QUESTIONS> & {
   topic_fit?: AnswerOf<typeof TOPIC_FIT>;

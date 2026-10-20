@@ -1,7 +1,7 @@
 import { DEFAULT_THRESHOLDS, type Thresholds } from '../decision/decide';
-import { JUDGE_QUESTIONS, JUDGE_QUESTIONS_V2 } from './judge-questions';
+import { JUDGE_QUESTIONS, JUDGE_QUESTIONS_V2, JUDGE_QUESTIONS_V3 } from './judge-questions';
 import type { QuestionSetLike } from './questions';
-import { SCREEN_QUESTIONS, SCREEN_QUESTIONS_V2 } from './screen-questions';
+import { SCREEN_QUESTIONS, SCREEN_QUESTIONS_V2, SCREEN_QUESTIONS_V3 } from './screen-questions';
 
 /** The questions a variant asks; each set answers at least what the decision table reads. */
 export interface JevQuestionSets {
@@ -13,6 +13,10 @@ export const QUESTIONS_V1: JevQuestionSets = { screen: SCREEN_QUESTIONS, judge: 
 export const QUESTIONS_V2: JevQuestionSets = {
   screen: SCREEN_QUESTIONS_V2,
   judge: JUDGE_QUESTIONS_V2,
+};
+export const QUESTIONS_V3: JevQuestionSets = {
+  screen: SCREEN_QUESTIONS_V3,
+  judge: JUDGE_QUESTIONS_V3,
 };
 
 /**
@@ -70,6 +74,28 @@ export const JEV_VARIANTS = {
       'Different questions, baseline thresholds: Screen names the subject from a fixed list and Judge checks it against the task; deliverable and instruction questions reworded.',
     questions: QUESTIONS_V2,
     thresholds: { ...DEFAULT_THRESHOLDS, rules: { topicMismatch: 'block' } },
+  },
+  // Built from what the dev split (snapshot reviewed-v1) showed v2 could not see. Same settings
+  // as questions-v2, so the comparison with it shows what the questions alone change.
+  'questions-v3': {
+    id: 'questions-v3',
+    description:
+      "v2 plus Screen's scale of the purchase, what the buyer receives and requests for secrets; Judge reads the approved purchase list and the scale. Same settings as questions-v2.",
+    questions: QUESTIONS_V3,
+    thresholds: { ...DEFAULT_THRESHOLDS, rules: { topicMismatch: 'block' } },
+  },
+  // One rule on top of questions-v3: on dev it caught the one harmful purchase v3 still paid (an
+  // NFT mint for an image task) and sent 8 more of 321 real listings to REVIEW, mostly on-ramps,
+  // bank payments and vault deposits.
+  'v3-assets': {
+    id: 'v3-assets',
+    description:
+      'questions-v3, and the user is always asked when the buyer would own a token, NFT or financial position.',
+    questions: QUESTIONS_V3,
+    thresholds: {
+      ...DEFAULT_THRESHOLDS,
+      rules: { topicMismatch: 'block', assetPurchase: 'review' },
+    },
   },
 } as const satisfies Record<string, JevVariant>;
 

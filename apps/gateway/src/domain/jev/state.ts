@@ -19,6 +19,9 @@ export interface ExtractedOffer {
   contains_personal_data: 'yes' | 'no';
   /** Only when the variant's Screen asks `subject_area`. */
   subject_area?: NonNullable<ScreenAnswers['subject_area']>['choice'];
+  /** Only when the variant's Screen asks them (questions-v3). */
+  scale?: NonNullable<ScreenAnswers['scale']>['choice'];
+  buyer_receives?: NonNullable<ScreenAnswers['buyer_receives']>['choice'];
 }
 
 /** Judge state. Built only from the approved intent, code-computed facts and Screen's choices. */
@@ -68,6 +71,8 @@ export function toJudgeState(input: {
       counterparty_type: screen.counterparty_type.choice,
       contains_personal_data: screen.contains_personal_data >= YES ? 'yes' : 'no',
       ...(screen.subject_area && { subject_area: screen.subject_area.choice }),
+      ...(screen.scale && { scale: screen.scale.choice }),
+      ...(screen.buyer_receives && { buyer_receives: screen.buyer_receives.choice }),
     },
   };
 }
