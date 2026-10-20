@@ -75,6 +75,12 @@ export function SignIn() {
           <Link to="/contact" className="text-muted-foreground hover:text-foreground">
             Contact
           </Link>
+          <a href="/privacy-policy" className="text-muted-foreground hover:text-foreground">
+            Privacy
+          </a>
+          <a href="/terms-of-service" className="text-muted-foreground hover:text-foreground">
+            Terms
+          </a>
         </nav>
       </div>
     </main>

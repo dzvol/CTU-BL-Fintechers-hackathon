@@ -324,6 +324,17 @@ describe('navigation', () => {
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
   });
 
+  it('links the static privacy policy and terms from sign-in', async () => {
+    loggedIn = false;
+    await open('/');
+    expect((await screen.findByRole('link', { name: 'Privacy' })).getAttribute('href')).toBe(
+      '/privacy-policy',
+    );
+    expect(screen.getByRole('link', { name: 'Terms' }).getAttribute('href')).toBe(
+      '/terms-of-service',
+    );
+  });
+
   it('keeps links from before the redesign working', async () => {
     await open(`/mandates/${intent.id}`);
     await screen.findByRole('button', { name: 'Approve task' });

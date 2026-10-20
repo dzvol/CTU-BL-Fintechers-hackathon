@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy policy · SemanticAuth</title>
+    <meta name="description" content="How SemanticAuth collects, uses and shares your data." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/"><img src="/favicon.svg" alt="" />SemanticAuth</a>
+      <a href="/">Sign in</a>
+    </header>
+    <main>
+      <h1>Privacy policy</h1>
+      <p class="updated">Last updated 20 October 2026</p>
+      <p class="note">
+        SemanticAuth is a hackathon demo, not a commercial service. It runs on the Base Sepolia test
+        network and moves test USDC with no real value.
+      </p>
+
+      <p>
+        SemanticAuth is an authorization gateway between AI agents and payments: your agent proposes
+        a task, you approve it in the dashboard, and the gateway checks every purchase against what
+        you approved before paying. This policy explains what data the service handles and why.
+      </p>
+
+      <h2>Google user data we access</h2>
+      <p>
+        When you sign in with Google we request only the <code>openid</code>, <code>email</code> and
+        <code>profile</code> scopes and receive your Google account ID, email address, name and
+        profile picture. We do not access your Gmail, Drive, contacts, calendar or any other Google
+        data.
+      </p>
+
+      <h2>How we use Google user data</h2>
+      <ul>
+        <li>The account ID identifies your account so you can sign in again.</li>
+        <li>Your name, email and picture are shown to you in the dashboard.</li>
+        <li>
+          We do not use it for advertising, do not sell it, do not use it to train AI models and do
+          not share it with anyone except as described below.
+        </li>
+      </ul>
+      <p>
+        SemanticAuth's use of information received from Google APIs adheres to the
+        <a href="https://developers.google.com/terms/api-services-user-data-policy"
+          >Google API Services User Data Policy</a
+        >, including the Limited Use requirements.
+      </p>
+
+      <h2>Other data we collect</h2>
+      <ul>
+        <li>
+          Tasks your agent proposes: the purpose, your request in your words, what may and may not
+          be bought, and the budget.
+        </li>
+        <li>The URLs your agent asks to buy and the merchants' payment offers.</li>
+        <li>
+          Your decisions, purchase outcomes, spending against your allowance, and API key metadata.
+          API keys are stored only as a hash.
+        </li>
+        <li>A session cookie that keeps you signed in for up to 7 days. No tracking cookies.</li>
+      </ul>
+
+      <h2>Who else receives data</h2>
+      <ul>
+        <li>Google, to sign you in.</li>
+        <li>
+          TypeSafe (Jev API), which checks each paid offer. It receives the merchant's offer text
+          and the task it is judged against. It never receives your name or email.
+        </li>
+        <li>Railway, which hosts the service and keeps standard request logs.</li>
+        <li>
+          Base Sepolia, a public blockchain. Payments, their amounts and recipient addresses are
+          visible to anyone. Your name and email are never written on chain.
+        </li>
+        <li>Merchants your agent buys from receive the payment and the request.</li>
+      </ul>
+
+      <h2>Storage, retention and deletion</h2>
+      <p>
+        Data is stored in the service's database on Railway for the duration of the demo. The
+        database may be reset at any time, which deletes everything. You can revoke your API key at
+        any time in the dashboard. To have your account and all its data deleted, open a request
+        through <a href="/contact">Contact</a>; we delete it within 30 days.
+      </p>
+
+      <h2>Security</h2>
+      <p>
+        Traffic is encrypted with HTTPS. API keys are stored as hashes and shown only once. Agents
+        never receive the wallet key that signs payments.
+      </p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, the date at the top changes with it.</p>
+    </main>
+    <footer>
+      <a href="/privacy-policy">Privacy</a>
+      <a href="/terms-of-service">Terms</a>
+      <a href="/contact">Contact</a>
+    </footer>
+  </body>
+</html>

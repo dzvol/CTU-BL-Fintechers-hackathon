@@ -9,6 +9,8 @@ const dist = mkdtempSync(join(tmpdir(), 'web-dist-'));
 mkdirSync(join(dist, 'assets'));
 writeFileSync(join(dist, 'index.html'), '<!doctype html><div id="root"></div>');
 writeFileSync(join(dist, 'assets', 'app-abc123.js'), 'console.log(1)');
+mkdirSync(join(dist, 'privacy-policy'));
+writeFileSync(join(dist, 'privacy-policy', 'index.html'), '<h1>Privacy policy</h1>');
 afterAll(() => rmSync(dist, { recursive: true, force: true }));
 
 const app = createApp({ ...testConfig, webDistDir: dist }, { googleOAuth: fakeGoogle });
@@ -20,6 +22,12 @@ describe('dashboard served by the gateway', () => {
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('id="root"');
       expect(res.headers.get('cache-control')).toBe('no-cache');
+    }
+  });
+
+  it('serves static pages such as the privacy policy as themselves, readable without JS', async () => {
+    for (const path of ['/privacy-policy', '/privacy-policy/']) {
+      expect(await (await app.request(path)).text()).toContain('<h1>Privacy policy</h1>');
     }
   });
 

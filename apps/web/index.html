@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SemanticAuth</title>
-    <meta name="description" content="Human-approved tasks and controlled agent spending." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#2f40ea" />
+    <meta
+      name="description"
+      content="SemanticAuth lets your AI agent pay for online resources only within tasks you approve."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,7 +20,39 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      What crawlers (and Google's OAuth review) see without JavaScript. React replaces it on load,
+      so it mirrors the sign-in page to avoid a visible jump.
+    -->
+    <div id="root">
+      <main
+        style="
+          max-width: 24rem;
+          margin: 0 auto;
+          padding: 18vh 24px 40px;
+          font-family: 'IBM Plex Sans', system-ui, sans-serif;
+          color: #1a1d29;
+        "
+      >
+        <p style="display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 600">
+          <img src="/favicon.svg" alt="" width="28" height="28" />SemanticAuth
+        </p>
+        <h1 style="margin: 40px 0 8px; font-size: 1.5rem">Your agent asks. You decide.</h1>
+        <p style="margin: 0; color: #5d6275">
+          SemanticAuth is an authorization gateway for AI agents. Your agent proposes a task, you
+          approve it here, and every payment is checked against what you approved. Sign in with
+          Google to manage your agent's keys, tasks and payments. A hackathon demo on the Base
+          Sepolia test network.
+        </p>
+        <p style="margin: 32px 0 0">
+          <a href="/auth/google/login" style="color: #2f40ea">Continue with Google</a>
+        </p>
+        <p style="display: flex; gap: 16px; margin: 24px 0 0; font-size: 0.875rem">
+          <a href="/privacy-policy" style="color: #5d6275">Privacy policy</a>
+          <a href="/terms-of-service" style="color: #5d6275">Terms of service</a>
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
