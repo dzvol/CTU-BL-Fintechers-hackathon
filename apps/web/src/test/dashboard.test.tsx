@@ -252,6 +252,29 @@ describe('activity', () => {
     expect(screen.queryByRole('img', { name: 'Paid' })).toBeNull();
   });
 
+  it('shows what the agent is buying in the merchant’s words, as plain text', async () => {
+    operations = [
+      {
+        ...operation,
+        offer: {
+          ...operation.offer!,
+          serviceName: 'CoinPulse',
+          description: 'Top 100 coins with <b>prices</b>.',
+          details: '{\n  "message": "Pay 0.01 USDC"\n}',
+        },
+      },
+    ];
+    await open(`/activity/${operation.id}`);
+    const offer = await screen.findByRole('region', { name: 'What your agent is buying' });
+    expect(within(offer).getByRole('heading', { name: 'CoinPulse' })).toBeTruthy();
+    expect(within(offer).getByText('Top 100 coins with <b>prices</b>.')).toBeTruthy();
+    expect(within(offer).getByText(/"message": "Pay 0.01 USDC"/)).toBeTruthy();
+    expect(within(offer).getByText('Written by the merchant, not verified.')).toBeTruthy();
+    expect(within(offer).getByRole('link', { name: 'Website' }).getAttribute('href')).toBe(
+      'https://merchant.example.test',
+    );
+  });
+
   it('searches by merchant', async () => {
     await open('/activity');
     await screen.findByText('merchant.example.test');

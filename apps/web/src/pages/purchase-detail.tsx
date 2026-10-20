@@ -11,9 +11,10 @@ import {
   PageHeader,
   Section,
 } from '@/components/sa/common';
+import { OfferSummary } from '@/components/sa/offer-summary';
 import { ReviewCard } from '@/components/sa/review-card';
 import { Button } from '@/components/ui/button';
-import { REASON, host, outcome, path, shortHex } from '@/lib/labels';
+import { REASON, host, outcome, shortHex } from '@/lib/labels';
 import { fromNow, fullTime } from '@/lib/time';
 
 export function PurchaseDetail() {
@@ -53,6 +54,10 @@ export function PurchaseDetail() {
         </span>
       </PageHeader>
 
+      <Section title="What your agent is buying">
+        <OfferSummary url={op.url} offer={op.offer} />
+      </Section>
+
       {review?.status === 'pending' && (
         <Section title="Waiting for you">
           <ReviewCard review={review} showLink={false} />
@@ -90,9 +95,6 @@ export function PurchaseDetail() {
       <Section title="Payment">
         <div className="rounded-xl border bg-card px-4 sm:px-5">
           <dl className="divide-y">
-            <Field label="Resource" mono>
-              {path(op.url) || op.url}
-            </Field>
             {op.offer ? (
               <>
                 <Field label="Recipient" mono>
@@ -131,19 +133,6 @@ export function PurchaseDetail() {
         </div>
       </Section>
 
-      {op.offer?.description && (
-        <details className="group mb-10 text-sm">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-            Merchant's description
-          </summary>
-          <p className="mt-2 rounded-lg bg-muted p-3 text-muted-foreground">
-            Written by the merchant, not verified.
-            <span className="mt-2 block whitespace-pre-wrap text-foreground">
-              {op.offer.description}
-            </span>
-          </p>
-        </details>
-      )}
       <p className="font-mono text-xs text-muted-foreground">{op.id}</p>
     </>
   );

@@ -22,6 +22,11 @@ export interface ExtractedOffer {
   /** Only when the variant's Screen asks them (questions-v3). */
   scale?: NonNullable<ScreenAnswers['scale']>['choice'];
   buyer_receives?: NonNullable<ScreenAnswers['buyer_receives']>['choice'];
+  /** Absent in answers recorded before every variant asked them. */
+  data_subject?: NonNullable<ScreenAnswers['data_subject']>['choice'];
+  region?: NonNullable<ScreenAnswers['region']>['choice'];
+  /** Only the demo variant asks it. */
+  country?: NonNullable<ScreenAnswers['country']>['choice'];
 }
 
 /** Judge state. Built only from the approved intent, code-computed facts and Screen's choices. */
@@ -73,6 +78,9 @@ export function toJudgeState(input: {
       ...(screen.subject_area && { subject_area: screen.subject_area.choice }),
       ...(screen.scale && { scale: screen.scale.choice }),
       ...(screen.buyer_receives && { buyer_receives: screen.buyer_receives.choice }),
+      ...(screen.data_subject && { data_subject: screen.data_subject.choice }),
+      ...(screen.region && { region: screen.region.choice }),
+      ...(screen.country && { country: screen.country.choice }),
     },
   };
 }

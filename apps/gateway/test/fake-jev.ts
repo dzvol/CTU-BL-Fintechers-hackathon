@@ -26,6 +26,8 @@ export const HONEST_SCREEN: ScreenAnswers = {
   instruction_override: 0.01,
   other_destination: 0.02,
   purpose_consistency: c('consistent', 0.9),
+  data_subject: c('markets_assets', 0.9),
+  region: c('not_regional', 0.9),
 };
 
 export const HONEST_JUDGE: JudgeAnswers = {

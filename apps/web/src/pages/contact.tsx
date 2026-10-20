@@ -9,7 +9,8 @@ export function Contact() {
   return (
     <>
       <PageHeader title="Contact">
-        Questions, bugs or a request to delete your data: write to us.
+        SemanticAuth was built at the CTU Blockchain Lab hackathon. Reach the lab by email or on its
+        website.
       </PageHeader>
       <div className="flex flex-wrap gap-2">
         <Button asChild>

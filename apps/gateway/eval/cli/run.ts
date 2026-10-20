@@ -1,7 +1,7 @@
 // npm run eval -- --all --split dev [--name n]          every Jev variant, compared at the end
 // npm run eval -- --suite e2e --variant baseline,strict  only some suites or variants
 // npm run eval -- --all --split test --final             (once, at the end; ships its Jev cache)
-//   --variant a,b    Jev variants from src/domain/jev/variants.ts (default: all of them)
+//   --variant a,b    Jev variants from src/domain/jev/variants.ts (default: all but `demo`)
 //   --offline        answer only from the cache (no Jev key needed, no spend)
 //   --limit N        first N cases per suite (smoke runs)
 //   --concurrency N  parallel cases (default 8)
@@ -49,7 +49,9 @@ const suites = args.has('all')
   : (args.get('suite') ?? fail('Pass --suite <name>[,<name>…] or --all.'))
       .split(',')
       .map((name) => SuiteSchema.parse(name.trim()));
-const variantIds = (args.get('variant')?.split(',') ?? JEV_VARIANT_IDS).map((id) => {
+// The demo variant is tuned to two pitch offers; it runs only when asked for by name.
+const evaluated = JEV_VARIANT_IDS.filter((id) => id !== 'demo');
+const variantIds = (args.get('variant')?.split(',') ?? evaluated).map((id) => {
   const trimmed = id.trim();
   if (!(trimmed in JEV_VARIANTS))
     fail(`Unknown variant "${trimmed}". Known: ${JEV_VARIANT_IDS.join(', ')}`);

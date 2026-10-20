@@ -54,6 +54,17 @@ export function ReviewCard({ review, showLink = true }: { review: Review; showLi
         </div>
         <Money value={review.offer.amount} className="text-lg font-semibold" />
       </div>
+      {showLink && review.offer.description && (
+        <p
+          className="mt-2 line-clamp-2 text-sm text-muted-foreground [overflow-wrap:anywhere]"
+          title="Written by the merchant, not verified"
+        >
+          {review.offer.serviceName && (
+            <span className="font-medium text-foreground">{review.offer.serviceName}: </span>
+          )}
+          {review.offer.description}
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         <Badge tone="warning" icon={REASON_ICON[review.reason]}>

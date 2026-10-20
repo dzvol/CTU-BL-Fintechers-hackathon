@@ -37,6 +37,13 @@ export const NormalizedOfferSchema = z.object({
   resourceUrl: z.url(),
   /** Untrusted merchant text. Never show it to Judge. */
   description: z.string().optional(),
+  /** Untrusted: the name the merchant gives its service. Never show it to Judge. */
+  serviceName: z.string().optional(),
+  /**
+   * Untrusted: the extra content of the merchant's payment request as JSON text, so the user can
+   * see what is on offer. Never show it to Judge or the agent.
+   */
+  details: z.string().optional(),
 });
 export type NormalizedOffer = z.infer<typeof NormalizedOfferSchema>;
 

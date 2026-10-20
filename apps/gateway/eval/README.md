@@ -138,7 +138,8 @@ prints a comparison against every variant and against Policy alone (also in
 | `balanced`     | decide instead of asking                               | v1        | block at 0.7, Judge 0.4/0.55/0.75, missing deliverable only if none |
 | `questions-v2` | different questions: subject from a fixed list → Judge | v2        | default + block on a subject mismatch                               |
 | `questions-v3` | v2 + scale, what the buyer receives, secret requests   | v3        | same as questions-v2                                                |
-| `v3-assets`    | v3, and always ask before buying a token or position   | v3        | questions-v2 settings + review an asset or financial position       |
+| `v3-assets`    | v3, and always ask before buying a token or position   | v3        | v2 settings + review an asset, Judge support 0.5 up to 0.10 USDC    |
+| `demo`         | live pitch demo only; not evaluated, never quote it    | v3        | v3-assets + support 0.4 up to 0.10 USDC, no deliverable review      |
 
 Rules for adding one:
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { X402PaymentRequired, X402PaymentRequirements } from '../../adapters/x402';
-import { selectOffer } from './offer-selection';
+import { selectOffer, withMerchantText } from './offer-selection';
 
 const USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 const PAY_TO = '0x1111111111111111111111111111111111111111';
@@ -57,5 +57,31 @@ describe('selectOffer', () => {
   ])('rejects %s', (_, change) => {
     const option = { ...supported, ...change } as X402PaymentRequirements;
     expect(selectOffer(offered(option), REQUESTED)).toBeUndefined();
+  });
+});
+
+describe('withMerchantText', () => {
+  const offer = selectOffer(offered(supported), REQUESTED)!.offer;
+
+  it('adds what Screen read, for the dashboard, without touching the payment fields', () => {
+    const withText = withMerchantText(offer, {
+      resource: { url: REQUESTED, serviceName: 'CoinPulse', description: 'Market snapshot' },
+      response_body_excerpt: { message: 'Pay 0.01 USDC' },
+    });
+    expect(withText).toEqual({
+      ...offer,
+      serviceName: 'CoinPulse',
+      description: 'Market snapshot',
+      details: '{\n  "message": "Pay 0.01 USDC"\n}',
+    });
+  });
+
+  it('caps long merchant text and leaves out what the merchant did not send', () => {
+    const withText = withMerchantText(offer, {
+      resource: { url: REQUESTED, description: 'x'.repeat(5_000) },
+    });
+    expect(withText.description).toHaveLength(2_001);
+    expect(withText).not.toHaveProperty('serviceName');
+    expect(withText).not.toHaveProperty('details');
   });
 });

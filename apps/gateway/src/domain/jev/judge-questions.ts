@@ -73,16 +73,20 @@ export const JUDGE_QUESTIONS = {
   },
 } as const satisfies Questions;
 
-/** Does the offer's subject (Screen's `subject_area`) match what the task is about? (questions-v2) */
+/**
+ * Does what the offer is about (Screen's subject area, who the data is about and which region)
+ * match what the task is about? (questions-v2 and later)
+ */
 export const TOPIC_FIT = {
   type: 'choice',
   instructions:
-    'Is `offer_as_extracted_from_merchant_text.subject_area` the subject that `task` is about?',
+    'Is what `offer_as_extracted_from_merchant_text` is about (`subject_area`, `data_subject`, `region`) what `task` is about?',
   criteria: {
-    same_subject: 'The task is about this subject',
+    same_subject: 'The task is about this subject, these kinds of subjects and this region',
     adjacent_subject: 'A neighbouring subject whose data directly helps the task',
-    different_subject: 'The task is not about this subject',
-    cannot_tell: 'The subject area is unknown or missing',
+    different_subject:
+      'The task is about another subject, another kind of subject (such as consumers instead of businesses) or another region',
+    cannot_tell: 'The extracted offer is too unclear to compare',
   },
 } as const;
 
@@ -115,6 +119,16 @@ export const JUDGE_QUESTIONS_V3 = {
         'Far more than the task needs: a bulk export or archive for a few items, unlimited or long access for a one-off task, enterprise tiers',
       no_information: 'The scale is unknown',
     },
+  },
+} as const satisfies Questions;
+
+/** The pitch demo's questions: v3 with `topic_fit` also reading the country. Not evaluated. */
+export const JUDGE_QUESTIONS_DEMO = {
+  ...JUDGE_QUESTIONS_V3,
+  topic_fit: {
+    ...TOPIC_FIT,
+    instructions:
+      'Is what `offer_as_extracted_from_merchant_text` is about (`subject_area`, `data_subject`, `region`, `country`) what `task` is about?',
   },
 } as const satisfies Questions;
 
