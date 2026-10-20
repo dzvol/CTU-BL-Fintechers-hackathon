@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Logo } from './logo';
 
-/** FAQ and Contact for visitors who aren't signed in. */
+/** FAQ, Contact and the legal pages for visitors who aren't signed in. */
 export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
@@ -26,6 +26,14 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-12">{children}</main>
+      <footer className="mx-auto flex max-w-3xl gap-4 px-4 pb-10 text-sm text-muted-foreground sm:px-8">
+        <a href="/privacy-policy" className="hover:text-foreground">
+          Privacy
+        </a>
+        <a href="/terms-of-service" className="hover:text-foreground">
+          Terms
+        </a>
+      </footer>
     </div>
   );
 }
