@@ -154,7 +154,15 @@ export function toJevAnswers(questions: Questions, output: Record<string, unknow
   return Object.fromEntries(
     Object.entries(questions).map(([id, question]) => {
       const options = optionsOf(question);
-      const raw = (output[id] ?? {}) as Record<string, unknown>;
+      // Accept `{ option: p }` and the common `{ reasoning, probabilities: { option: p } }`.
+      const entry = output[id] as Record<string, unknown> | undefined;
+      const raw = (
+        entry && typeof entry.probabilities === 'object' ? entry.probabilities : entry
+      ) as Record<string, unknown> | undefined;
+      // No number for any option means the model answered in another shape: fail the call
+      // instead of silently scoring a uniform answer.
+      if (!raw || !options.some((o) => Number.isFinite(Number(raw[o]))))
+        throw new Error(`Model gave no probabilities for "${id}"`);
       const p = normalize(raw, options);
       switch (question.type) {
         case 'noul':
@@ -174,6 +182,20 @@ export function toJevAnswers(questions: Questions, output: Record<string, unknow
   );
 }
 
+/** Spells out the answer shape for plain-JSON calls, where no schema enforces it. */
+export function formatHint(questions: Questions, reasoning: boolean): string {
+  const example = Object.fromEntries(
+    Object.entries(questions).map(([id, q]) => [
+      id,
+      Object.fromEntries([
+        ...(reasoning ? [['reasoning', '<one or two sentences>']] : []),
+        ...optionsOf(q).map((o) => [o, '<probability>']),
+      ]),
+    ]),
+  );
+  return `\n\nANSWER FORMAT: one JSON object with exactly these keys, numbers in place of <probability>:\n${JSON.stringify(example)}`;
+}
+
 /** The first JSON object in a text, for models that ignore or don't support structured output. */
 export function extractJson(text: string): Record<string, unknown> {
   const start = text.indexOf('{');
@@ -184,7 +206,10 @@ export function extractJson(text: string): Record<string, unknown> {
 
 function isStructuredOutputUnsupported(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  return /structured|output ?config|textFormat|json_schema|not supported/i.test(message);
+  // Includes Claude's "compiled grammar is too large" for big schemas (v2 with reasoning fields).
+  return /structured|output ?config|textFormat|json_schema|not supported|grammar|schema/i.test(
+    message,
+  );
 }
 
 /**
@@ -230,14 +255,30 @@ export function createBedrockFetch(options: { region?: string; send?: Send } = {
     };
 
     let output: ConverseCommandOutput;
-    if (plainJsonModels.has(body.model)) output = await send(base);
+    // Without a schema the model must be told the shape, or it invents its own.
+    const plain: ConverseCommandInput = {
+      ...base,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              text:
+                userPrompt(body.state, body.questions) +
+                formatHint(body.questions, prompt === 'v2'),
+            },
+          ],
+        },
+      ],
+    };
+    if (plainJsonModels.has(body.model)) output = await send(plain);
     else {
       try {
         output = await send(structured);
       } catch (error) {
         if (!isStructuredOutputUnsupported(error)) throw error;
         plainJsonModels.add(body.model);
-        output = await send(base);
+        output = await send(plain);
       }
     }
 

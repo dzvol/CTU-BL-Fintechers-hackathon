@@ -77,6 +77,8 @@ describe('Bedrock stand-in for Jev', () => {
     await jev.screen({ other: 1 } as never);
 
     expect(sent.map((s) => Boolean(s.outputConfig))).toEqual([true, false, false]);
+    // The plain call spells out the answer shape.
+    expect(sent[1]!.messages![0]!.content![0]!.text).toContain('ANSWER FORMAT');
   });
 
   it('fails (so the case fails closed) when the model returns no JSON', async () => {
@@ -99,6 +101,17 @@ describe('Bedrock stand-in for Jev', () => {
     expect(normalize({ a: 2, b: -1 }, ['a', 'b'])).toEqual({ a: 1, b: 0 });
     expect(normalize({ a: 0.2, b: 0.2 }, ['a', 'b'])).toEqual({ a: 0.5, b: 0.5 });
     expect(normalize({}, ['a', 'b', 'c', 'd'])).toEqual({ a: 0.25, b: 0.25, c: 0.25, d: 0.25 });
+  });
+
+  it('reads nested probabilities and fails on an answer without any', () => {
+    const questions: Questions = {
+      c: { type: 'choice', instructions: 'c?', criteria: { x: 'x', y: 'y' } },
+    };
+    expect(
+      toJevAnswers(questions, { c: { reasoning: 'r', probabilities: { x: 0.9, y: 0.1 } } }).c,
+    ).toMatchObject({ choice: 'x' });
+    expect(() => toJevAnswers(questions, { c: 'x' })).toThrow(/no probabilities/);
+    expect(() => toJevAnswers(questions, {})).toThrow(/no probabilities/);
   });
 
   it('turns option probabilities into noul, choice and score answers', () => {
